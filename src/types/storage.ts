@@ -44,7 +44,7 @@ export interface TransactionFilters {
 }
 
 export const DB_NAME = 'openaccounts';
-export const DB_VERSION = 1;
+export const DB_VERSION = 2;
 
 export const STORE_ACCOUNTS = 'accounts';
 export const STORE_TRANSACTIONS = 'transactions';
