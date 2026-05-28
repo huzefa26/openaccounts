@@ -1,0 +1,142 @@
+[
+  {
+    "name": "Cash",
+    "type": "asset",
+    "currency": "",
+    "category": null,
+    "isPredefined": true
+  },
+  {
+    "name": "Bank Account",
+    "type": "asset",
+    "currency": "",
+    "category": null,
+    "isPredefined": true
+  },
+  {
+    "name": "Accounts Receivable",
+    "type": "asset",
+    "currency": "",
+    "category": null,
+    "isPredefined": true
+  },
+  {
+    "name": "Fixed Assets",
+    "type": "asset",
+    "currency": "",
+    "category": null,
+    "isPredefined": true
+  },
+  {
+    "name": "Investments",
+    "type": "asset",
+    "currency": "",
+    "category": null,
+    "isPredefined": true
+  },
+  {
+    "name": "Credit Card",
+    "type": "liability",
+    "currency": "",
+    "category": null,
+    "isPredefined": true
+  },
+  {
+    "name": "Loans",
+    "type": "liability",
+    "currency": "",
+    "category": null,
+    "isPredefined": true
+  },
+  {
+    "name": "Accounts Payable",
+    "type": "liability",
+    "currency": "",
+    "category": null,
+    "isPredefined": true
+  },
+  {
+    "name": "Opening Balance",
+    "type": "equity",
+    "currency": "",
+    "category": null,
+    "isPredefined": true
+  },
+  {
+    "name": "Retained Earnings",
+    "type": "equity",
+    "currency": "",
+    "category": null,
+    "isPredefined": true
+  },
+  {
+    "name": "Income",
+    "type": "income",
+    "currency": "",
+    "category": null,
+    "isPredefined": true
+  },
+  {
+    "name": "Interest Income",
+    "type": "income",
+    "currency": "",
+    "category": null,
+    "isPredefined": true
+  },
+  {
+    "name": "General Expenses",
+    "type": "expense",
+    "currency": "",
+    "category": null,
+    "isPredefined": true
+  },
+  {
+    "name": "Food & Dining",
+    "type": "expense",
+    "currency": "",
+    "category": null,
+    "isPredefined": true
+  },
+  {
+    "name": "Transportation",
+    "type": "expense",
+    "currency": "",
+    "category": null,
+    "isPredefined": true
+  },
+  {
+    "name": "Utilities",
+    "type": "expense",
+    "currency": "",
+    "category": null,
+    "isPredefined": true
+  },
+  {
+    "name": "Rent",
+    "type": "expense",
+    "currency": "",
+    "category": null,
+    "isPredefined": true
+  },
+  {
+    "name": "Entertainment",
+    "type": "expense",
+    "currency": "",
+    "category": null,
+    "isPredefined": true
+  },
+  {
+    "name": "Shopping",
+    "type": "expense",
+    "currency": "",
+    "category": null,
+    "isPredefined": true
+  },
+  {
+    "name": "Healthcare",
+    "type": "expense",
+    "currency": "",
+    "category": null,
+    "isPredefined": true
+  }
+]
