@@ -30,14 +30,21 @@ describe('TransactionFormHtml', () => {
     expect(html).toContain('New Transaction');
     expect(html).toContain('Date');
     expect(html).toContain('Description');
-    expect(html).toContain('Entries');
     expect(html).toContain('Save Transaction');
   });
 
-  it('renders 2 split rows by default', () => {
+  it('renders From and To sections', () => {
     const html = TransactionFormHtml(accounts);
-    const matches = html.match(/split-row/g);
-    expect(matches).toHaveLength(2);
+    expect(html).toContain('>From<');
+    expect(html).toContain('>To<');
+  });
+
+  it('renders 1 From row and 1 To row by default', () => {
+    const html = TransactionFormHtml(accounts);
+    const fromMatches = html.match(/from-row/g);
+    const toMatches = html.match(/to-row/g);
+    expect(fromMatches).toHaveLength(1);
+    expect(toMatches).toHaveLength(1);
   });
 
   it('renders account options in selects', () => {
@@ -47,24 +54,17 @@ describe('TransactionFormHtml', () => {
     expect(html).toContain('Rent');
   });
 
-  it('disables remove button on first 2 rows', () => {
-    const html = TransactionFormHtml(accounts);
-    const disabledMatches = html.match(/disabled/g);
-    expect(disabledMatches).toHaveLength(2);
-  });
-
   it('renders a date input with today default', () => {
     const html = TransactionFormHtml(accounts);
     expect(html).toContain('type="date"');
     expect(html).toContain('id="tx-date"');
   });
 
-  it('renders debit/credit radios for each split', () => {
+  it('has no debit/credit radio buttons', () => {
     const html = TransactionFormHtml(accounts);
-    expect(html).toContain('Debit');
-    expect(html).toContain('Credit');
-    expect(html).toContain('split-type-0');
-    expect(html).toContain('split-type-1');
+    expect(html).not.toContain('Debit');
+    expect(html).not.toContain('Credit');
+    expect(html).not.toContain('split-type');
   });
 
   it('renders balance indicator', () => {
@@ -72,6 +72,14 @@ describe('TransactionFormHtml', () => {
     expect(html).toContain('balance-indicator');
     expect(html).toContain('balance-text');
     expect(html).toContain('balance-status');
+  });
+
+  it('renders add buttons for both sections', () => {
+    const html = TransactionFormHtml(accounts);
+    expect(html).toContain('id="add-from"');
+    expect(html).toContain('id="add-to"');
+    expect(html).toContain('+ Add From');
+    expect(html).toContain('+ Add To');
   });
 });
 
@@ -88,35 +96,60 @@ describe('mountTransactionForm', () => {
     document.body.removeChild(container);
   });
 
-  it('adds a split row on "+ Add entry" click', () => {
+  it('adds a From row on "+ Add From" click', () => {
     mountTransactionForm(container, accounts, async () => {});
-    const btn = container.querySelector<HTMLButtonElement>('#add-split')!;
-    btn.click();
-    const rows = container.querySelectorAll('.split-row');
-    expect(rows.length).toBe(3);
+    container.querySelector<HTMLButtonElement>('#add-from')!.click();
+    const rows = container.querySelectorAll('#from-container .split-row');
+    expect(rows.length).toBe(2);
   });
 
-  it('does not remove split row when only 2 remain', () => {
+  it('adds a To row on "+ Add To" click', () => {
     mountTransactionForm(container, accounts, async () => {});
-    const removeBtn = container.querySelector<HTMLButtonElement>('.remove-split')!;
+    container.querySelector<HTMLButtonElement>('#add-to')!.click();
+    const rows = container.querySelectorAll('#to-container .split-row');
+    expect(rows.length).toBe(2);
+  });
 
+  it('does not remove last From row', () => {
+    mountTransactionForm(container, accounts, async () => {});
+    const removeBtn = container.querySelector<HTMLButtonElement>('#from-container .remove-split')!;
     expect(removeBtn.disabled).toBe(true);
     removeBtn.click();
-    const rowsAfter = container.querySelectorAll('.split-row');
-    expect(rowsAfter.length).toBe(2);
+    const rows = container.querySelectorAll('#from-container .split-row');
+    expect(rows.length).toBe(1);
   });
 
-  it('removes a split row when >2 and remove clicked', () => {
+  it('does not remove last To row', () => {
     mountTransactionForm(container, accounts, async () => {});
-    container.querySelector<HTMLButtonElement>('#add-split')!.click();
-    let rows = container.querySelectorAll('.split-row');
-    expect(rows.length).toBe(3);
+    const removeBtn = container.querySelector<HTMLButtonElement>('#to-container .remove-split')!;
+    expect(removeBtn.disabled).toBe(true);
+    removeBtn.click();
+    const rows = container.querySelectorAll('#to-container .split-row');
+    expect(rows.length).toBe(1);
+  });
 
-    const removeBtn = rows[2].querySelector<HTMLButtonElement>('.remove-split')!;
+  it('removes a From row when >1', () => {
+    mountTransactionForm(container, accounts, async () => {});
+    container.querySelector<HTMLButtonElement>('#add-from')!.click();
+    let rows = container.querySelectorAll('#from-container .split-row');
+    expect(rows.length).toBe(2);
+    const removeBtn = rows[1].querySelector<HTMLButtonElement>('.remove-split')!;
     expect(removeBtn.disabled).toBe(false);
     removeBtn.click();
-    rows = container.querySelectorAll('.split-row');
+    rows = container.querySelectorAll('#from-container .split-row');
+    expect(rows.length).toBe(1);
+  });
+
+  it('removes a To row when >1', () => {
+    mountTransactionForm(container, accounts, async () => {});
+    container.querySelector<HTMLButtonElement>('#add-to')!.click();
+    let rows = container.querySelectorAll('#to-container .split-row');
     expect(rows.length).toBe(2);
+    const removeBtn = rows[1].querySelector<HTMLButtonElement>('.remove-split')!;
+    expect(removeBtn.disabled).toBe(false);
+    removeBtn.click();
+    rows = container.querySelectorAll('#to-container .split-row');
+    expect(rows.length).toBe(1);
   });
 
   it('calls onSave with correct data on valid form', async () => {
@@ -125,50 +158,40 @@ describe('mountTransactionForm', () => {
       savedData = data;
     });
 
-    const selects = container.querySelectorAll<HTMLSelectElement>('[data-split-account]');
-    const amounts = container.querySelectorAll<HTMLInputElement>('[data-split-amount]');
-    const radios = container.querySelectorAll<HTMLInputElement>('input[type="radio"]');
+    const fromSelects = container.querySelectorAll<HTMLSelectElement>('#from-container [data-split-account]');
+    const toSelects = container.querySelectorAll<HTMLSelectElement>('#to-container [data-split-account]');
+    const fromAmounts = container.querySelectorAll<HTMLInputElement>('#from-container [data-split-amount]');
+    const toAmounts = container.querySelectorAll<HTMLInputElement>('#to-container [data-split-amount]');
 
-    selects[0].value = '1';
-    selects[1].value = '2';
-    amounts[0].value = '100';
-    amounts[1].value = '100';
-    radios[3].checked = true; // row 0: debit (0), row 1: credit (3)
+    fromSelects[0].value = '1';
+    toSelects[0].value = '2';
+    fromAmounts[0].value = '100';
+    toAmounts[0].value = '100';
 
     const desc = container.querySelector<HTMLInputElement>('#tx-desc')!;
     desc.value = 'Test transaction';
 
-    const saveBtn = container.querySelector<HTMLButtonElement>('#save-tx')!;
-    saveBtn.click();
+    container.querySelector<HTMLButtonElement>('#save-tx')!.click();
 
     expect(savedData).not.toBeNull();
     expect(savedData.description).toBe('Test transaction');
     expect(savedData.splits).toHaveLength(2);
-    expect(savedData.splits[0].accountId).toBe(1);
-    expect(savedData.splits[0].amount).toBe(100);
-    expect(savedData.splits[0].type).toBe('debit');
-    expect(savedData.splits[1].accountId).toBe(2);
-    expect(savedData.splits[1].amount).toBe(100);
-    expect(savedData.splits[1].type).toBe('credit');
+    expect(savedData.splits[0]).toEqual({ accountId: 1, amount: 100, type: 'credit' });
+    expect(savedData.splits[1]).toEqual({ accountId: 2, amount: 100, type: 'debit' });
   });
 
-  it('does not call onSave when debits != credits', async () => {
+  it('does not call onSave when From sum != To sum', async () => {
     let savedData: any = null;
     mountTransactionForm(container, accounts, async (data) => {
       savedData = data;
     });
 
-    const selects = container.querySelectorAll<HTMLSelectElement>('[data-split-account]');
-    const amounts = container.querySelectorAll<HTMLInputElement>('[data-split-amount]');
+    const fromAmounts = container.querySelectorAll<HTMLInputElement>('#from-container [data-split-amount]');
+    const toAmounts = container.querySelectorAll<HTMLInputElement>('#to-container [data-split-amount]');
+    fromAmounts[0].value = '100';
+    toAmounts[0].value = '50';
 
-    selects[0].value = '1';
-    selects[1].value = '2';
-    amounts[0].value = '100';
-    amounts[1].value = '50';
-
-    const saveBtn = container.querySelector<HTMLButtonElement>('#save-tx')!;
-    saveBtn.click();
-
+    container.querySelector<HTMLButtonElement>('#save-tx')!.click();
     expect(savedData).toBeNull();
   });
 
@@ -178,46 +201,36 @@ describe('mountTransactionForm', () => {
       savedData = data;
     });
 
-    const selects = container.querySelectorAll<HTMLSelectElement>('[data-split-account]');
-    const amounts = container.querySelectorAll<HTMLInputElement>('[data-split-amount]');
+    const fromSelects = container.querySelectorAll<HTMLSelectElement>('#from-container [data-split-account]');
+    const toSelects = container.querySelectorAll<HTMLSelectElement>('#to-container [data-split-account]');
+    fromSelects[0].value = '1';
+    toSelects[0].value = '2';
 
-    selects[0].value = '1';
-    selects[1].value = '2';
-    amounts[0].value = '100';
-    amounts[1].value = '100';
-
-    const saveBtn = container.querySelector<HTMLButtonElement>('#save-tx')!;
-    saveBtn.click();
-
+    container.querySelector<HTMLButtonElement>('#save-tx')!.click();
     expect(savedData).toBeNull();
   });
 
-  it('updateBalance shows balanced when debits equal credits', () => {
+  it('updateBalance shows balanced when From = To', () => {
     mountTransactionForm(container, accounts, async () => {});
 
-    const amounts = container.querySelectorAll<HTMLInputElement>('[data-split-amount]');
-    const radios = container.querySelectorAll<HTMLInputElement>('input[type="radio"]');
-    amounts[0].value = '100';
-    amounts[1].value = '100';
-    radios[3].checked = true; // row 0: debit (0), row 1: credit (3)
+    const fromAmounts = container.querySelectorAll<HTMLInputElement>('#from-container [data-split-amount]');
+    const toAmounts = container.querySelectorAll<HTMLInputElement>('#to-container [data-split-amount]');
+    fromAmounts[0].value = '100';
+    toAmounts[0].value = '100';
 
-    const inputEvent = new Event('input', { bubbles: true });
-    amounts[0].dispatchEvent(inputEvent);
+    fromAmounts[0].dispatchEvent(new Event('input', { bubbles: true }));
 
     const status = container.querySelector('#balance-status')!;
     expect(status.textContent).toBe('✓');
     expect(status.className).toBe('balanced');
   });
 
-  it('updateBalance shows unbalanced when debits != credits', () => {
+  it('updateBalance shows unbalanced when From != To', () => {
     mountTransactionForm(container, accounts, async () => {});
 
-    const amounts = container.querySelectorAll<HTMLInputElement>('[data-split-amount]');
-    amounts[0].value = '100';
-    amounts[1].value = '50';
-
-    const inputEvent = new Event('input', { bubbles: true });
-    amounts[0].dispatchEvent(inputEvent);
+    const fromAmounts = container.querySelectorAll<HTMLInputElement>('#from-container [data-split-amount]');
+    fromAmounts[0].value = '100';
+    fromAmounts[0].dispatchEvent(new Event('input', { bubbles: true }));
 
     const status = container.querySelector('#balance-status')!;
     expect(status.textContent).toBe('✗');

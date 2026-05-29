@@ -27,15 +27,22 @@ export function TransactionFormHtml(accounts: Account[]): string {
         <input type="text" id="tx-desc" placeholder="e.g. Grocery shopping" />
       </label>
 
-      <h3>Entries</h3>
-      <div id="splits-container">
-        ${splitRowHtml(accounts, 0)}
-        ${splitRowHtml(accounts, 1)}
+      <h3>From</h3>
+      <div id="from-container">
+        ${splitRowHtml(accounts, 'from', 0)}
       </div>
+      <button type="button" class="outline" id="add-from">+ Add From</button>
 
-      <button type="button" class="outline" id="add-split">+ Add entry</button>
+      <h3>To</h3>
+      <div id="to-container">
+        ${splitRowHtml(accounts, 'to', 1)}
+      </div>
+      <button type="button" class="outline" id="add-to">+ Add To</button>
 
-      <p id="balance-indicator">Balance: <span id="balance-text">0.00 D / 0.00 C</span> <span id="balance-status">&#10003;</span></p>
+      <p id="balance-indicator">
+        <span id="balance-status">&#10003;</span>
+        <span id="balance-text">$0.00 From = $0.00 To</span>
+      </p>
 
       <footer class="hstack justify-end">
         <button id="save-tx">Save Transaction</button>
@@ -43,17 +50,15 @@ export function TransactionFormHtml(accounts: Account[]): string {
     </article>`;
 }
 
-function splitRowHtml(accounts: Account[], idx: number): string {
+function splitRowHtml(accounts: Account[], side: 'from' | 'to', idx: number): string {
   return `
-    <div class="split-row" data-idx="${idx}">
+    <div class="split-row ${side}-row" data-idx="${idx}">
       <select data-split-account required>
         <option value="">— Select account —</option>
         ${accounts.map((a) => `<option value="${a.id}">${a.name}</option>`).join('')}
       </select>
       <input type="number" data-split-amount placeholder="0.00" step="0.01" min="0" required />
-      <label><input type="radio" name="split-type-${idx}" value="debit" checked /> Debit</label>
-      <label><input type="radio" name="split-type-${idx}" value="credit" /> Credit</label>
-      <button type="button" class="outline remove-split" ${idx < 2 ? 'disabled' : ''} title="Remove entry">&minus;</button>
+      <button type="button" class="outline remove-split" disabled title="Remove entry">&minus;</button>
     </div>`;
 }
 
@@ -65,33 +70,37 @@ export function mountTransactionForm(
   const form = el.querySelector('#tx-form');
   if (!form) return;
 
-  let splitCount = 2;
+  let fromCount = 1;
+  let toCount = 1;
 
   const updateBalance = (): void => {
-    const rows = form.querySelectorAll<HTMLElement>('.split-row');
-    let debits = 0;
-    let credits = 0;
-    rows.forEach((row) => {
+    const fromRows = form.querySelectorAll<HTMLElement>('#from-container .split-row');
+    const toRows = form.querySelectorAll<HTMLElement>('#to-container .split-row');
+    let fromTotal = 0;
+    let toTotal = 0;
+
+    fromRows.forEach((row) => {
       const amount = parseFloat(
         (row.querySelector<HTMLInputElement>('[data-split-amount]')?.value ?? '0'),
       );
-      if (isNaN(amount)) return;
-      const type = row.querySelector<HTMLInputElement>(
-        'input[type="radio"]:checked',
-      )?.value;
-      if (type === 'debit') debits += amount;
-      else credits += amount;
+      if (!isNaN(amount)) fromTotal += amount;
+    });
+    toRows.forEach((row) => {
+      const amount = parseFloat(
+        (row.querySelector<HTMLInputElement>('[data-split-amount]')?.value ?? '0'),
+      );
+      if (!isNaN(amount)) toTotal += amount;
     });
 
     const text = form.querySelector('#balance-text')!;
     const status = form.querySelector('#balance-status')!;
-    const diff = Math.abs(debits - credits);
+    const diff = Math.abs(fromTotal - toTotal);
     if (diff < 0.001) {
-      text.textContent = `${debits.toFixed(2)} D / ${credits.toFixed(2)} C`;
+      text.textContent = `$${fromTotal.toFixed(2)} From = $${toTotal.toFixed(2)} To`;
       status.textContent = '✓';
       status.className = 'balanced';
     } else {
-      text.textContent = `${debits.toFixed(2)} D / ${credits.toFixed(2)} C (diff: ${diff.toFixed(2)})`;
+      text.textContent = `$${fromTotal.toFixed(2)} From ≠ $${toTotal.toFixed(2)} To (diff: $${diff.toFixed(2)})`;
       status.textContent = '✗';
       status.className = 'unbalanced';
     }
@@ -99,50 +108,81 @@ export function mountTransactionForm(
 
   const onInput = (): void => updateBalance();
 
+  const updateRemoveButtons = (): void => {
+    ['#from-container', '#to-container'].forEach((sel) => {
+      const container = form.querySelector(sel)!;
+      const rows = container.querySelectorAll<HTMLElement>('.split-row');
+      container.querySelectorAll<HTMLButtonElement>('.remove-split').forEach((btn) => {
+        btn.disabled = rows.length <= 1;
+      });
+    });
+  };
+
   form.addEventListener('input', onInput);
   form.addEventListener('change', onInput);
+  updateRemoveButtons();
 
   form.addEventListener('click', (e) => {
     const target = e.target as HTMLElement;
 
-    if (target.matches('#add-split')) {
-      const container = form.querySelector('#splits-container')!;
-      container.insertAdjacentHTML('beforeend', splitRowHtml(accounts, splitCount));
-      splitCount++;
+    if (target.matches('#add-from')) {
+      const container = form.querySelector('#from-container')!;
+      container.insertAdjacentHTML('beforeend', splitRowHtml(accounts, 'from', fromCount));
+      fromCount++;
       updateBalance();
+      updateRemoveButtons();
+      return;
+    }
+
+    if (target.matches('#add-to')) {
+      const container = form.querySelector('#to-container')!;
+      container.insertAdjacentHTML('beforeend', splitRowHtml(accounts, 'to', toCount));
+      toCount++;
+      updateBalance();
+      updateRemoveButtons();
       return;
     }
 
     if (target.matches('.remove-split')) {
       const row = target.closest<HTMLElement>('.split-row');
       if (!row) return;
-      const rows = form.querySelectorAll<HTMLElement>('.split-row');
-      if (rows.length <= 2) return;
+      const isFrom = row.classList.contains('from-row');
+      const container = row.closest<HTMLElement>('#from-container, #to-container')!;
+      const rows = container.querySelectorAll<HTMLElement>('.split-row');
+      if (rows.length <= 1) return;
       row.remove();
-      splitCount--;
+      if (isFrom) fromCount--;
+      else toCount--;
       updateBalance();
+      updateRemoveButtons();
       return;
     }
 
     if (target.matches('#save-tx') || target.closest('#save-tx')) {
-      const rows = form.querySelectorAll<HTMLElement>('.split-row');
+      const fromRows = form.querySelectorAll<HTMLElement>('#from-container .split-row');
+      const toRows = form.querySelectorAll<HTMLElement>('#to-container .split-row');
       const splits: TransactionFormData['splits'] = [];
 
-      for (const row of rows) {
+      for (const row of fromRows) {
         const accountId = parseInt(
           (row.querySelector<HTMLSelectElement>('[data-split-account]')?.value ?? ''),
         );
         const amount = parseFloat(
           (row.querySelector<HTMLInputElement>('[data-split-amount]')?.value ?? '0'),
         );
-        const type = row.querySelector<HTMLInputElement>(
-          'input[type="radio"]:checked',
-        )?.value as 'debit' | 'credit';
+        if (isNaN(accountId) || isNaN(amount) || amount <= 0) return;
+        splits.push({ accountId, amount, type: 'credit' });
+      }
 
-        if (isNaN(accountId) || isNaN(amount) || amount <= 0) {
-          return;
-        }
-        splits.push({ accountId, amount, type });
+      for (const row of toRows) {
+        const accountId = parseInt(
+          (row.querySelector<HTMLSelectElement>('[data-split-account]')?.value ?? ''),
+        );
+        const amount = parseFloat(
+          (row.querySelector<HTMLInputElement>('[data-split-amount]')?.value ?? '0'),
+        );
+        if (isNaN(accountId) || isNaN(amount) || amount <= 0) return;
+        splits.push({ accountId, amount, type: 'debit' });
       }
 
       if (splits.length < 2) return;
@@ -156,7 +196,6 @@ export function mountTransactionForm(
       if (!date || !description) return;
 
       onSave({ date, description, splits });
-      return;
     }
   });
 }
