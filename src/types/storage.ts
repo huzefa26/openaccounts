@@ -9,6 +9,7 @@ export interface Account {
   category?: string | null;
   isPredefined: boolean;
   archived: boolean;
+  openingBalance?: number;
   createdAt: string;
   updatedAt: string;
 }

@@ -78,8 +78,8 @@ describe('TransactionFormHtml', () => {
     const html = TransactionFormHtml(accounts);
     expect(html).toContain('id="add-from"');
     expect(html).toContain('id="add-to"');
-    expect(html).toContain('+ Add from account');
-    expect(html).toContain('+ Add to account');
+    expect(html).toContain('+ Add from category');
+    expect(html).toContain('+ Add to category');
   });
 });
 

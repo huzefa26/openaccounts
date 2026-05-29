@@ -1,7 +1,7 @@
 import { StorageService } from '../lib/storage';
 import { Router } from './router';
 import type { PageResult } from './router';
-import { AccountsPage } from './pages/accounts';
+import { CategoriesPageHtml, mountCategoriesPage } from './pages/categories';
 import { LedgerHtml } from './pages/ledger';
 import { TransactionFormHtml, mountTransactionForm } from './components/transaction-form';
 import { RecentEntriesHtml } from './components/recent-entries';
@@ -15,7 +15,7 @@ export class App {
     this.router = new Router(container, {
       home: () => this.homePage(),
       ledger: () => this.ledgerPage(),
-      accounts: () => this.accountsPage(),
+      categories: () => this.categoriesPage(),
       profile: () => this.profilePage(),
     });
   }
@@ -72,9 +72,18 @@ export class App {
     };
   }
 
-  private async accountsPage(): Promise<PageResult> {
+  private async categoriesPage(): Promise<PageResult> {
     const accounts = await this.storage.getAllAccounts();
-    return { html: `<div class="page-content">${AccountsPage(accounts)}</div>` };
+    return {
+      html: CategoriesPageHtml(accounts),
+      mount: (el) => {
+        mountCategoriesPage(el, accounts, this.storage, async () => {
+          const result = await this.categoriesPage();
+          el.innerHTML = result.html;
+          result.mount?.(el);
+        });
+      },
+    };
   }
 
   private async profilePage(): Promise<PageResult> {

@@ -32,7 +32,7 @@ export function TransactionFormHtml(accounts: Account[]): string {
         <div id="from-container">
           ${splitRowHtml(accounts, 'from', 0)}
         </div>
-        <button type="button" class="add-link" id="add-from">+ Add from account</button>
+        <button type="button" class="add-link" id="add-from">+ Add from category</button>
       </div>
 
       <div class="section-card to">
@@ -40,7 +40,7 @@ export function TransactionFormHtml(accounts: Account[]): string {
         <div id="to-container">
           ${splitRowHtml(accounts, 'to', 1)}
         </div>
-        <button type="button" class="add-link" id="add-to">+ Add to account</button>
+        <button type="button" class="add-link" id="add-to">+ Add to category</button>
       </div>
 
       <p id="balance-indicator" class="balance-zero">
@@ -58,7 +58,7 @@ function splitRowHtml(accounts: Account[], side: 'from' | 'to', idx: number): st
   return `
     <div class="split-row ${side}-row" data-idx="${idx}">
       <select data-split-account required>
-        <option value="">— Select account —</option>
+        <option value="">— Select category —</option>
         ${accounts.map((a) => `<option value="${a.id}">${a.name}</option>`).join('')}
       </select>
       <input type="number" data-split-amount placeholder="0.00" step="0.01" min="0" required />
