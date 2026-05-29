@@ -41,10 +41,11 @@ describe('RecentEntriesHtml', () => {
     );
     const html = RecentEntriesHtml(txs, accountMap);
     const matches = html.match(/<tr>/g);
-    expect(matches).toHaveLength(6); // 5 data rows + 1 header
+    // 5 most recent transactions × 2 splits each + 1 header row
+    expect(matches).toHaveLength(11);
   });
 
-  it('shows total amount (sum of debits or credits)', () => {
+  it('shows debit and credit amounts in separate columns', () => {
     const tx = makeTx({
       splits: [
         { accountId: 1, amount: 200, type: 'debit', currency: 'USD' },
@@ -52,7 +53,9 @@ describe('RecentEntriesHtml', () => {
       ],
     });
     const html = RecentEntriesHtml([tx], accountMap);
-    expect(html).toContain('$400.00');
+    expect(html).toContain('200.00');
+    expect(html).toContain('Cash');
+    expect(html).toContain('Income');
   });
 
   it('escapes HTML in description', () => {

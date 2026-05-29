@@ -38,7 +38,10 @@ export function CategoriesPageHtml(accounts: Account[]): string {
                     const balance = (a.openingBalance ?? 0).toFixed(2);
                     return `
                       <div class="category-row" data-category-id="${a.id}">
-                        <span class="category-name">${esc(a.name)}</span>
+                        <span class="category-name">
+                          ${esc(a.name)}
+                          <span class="account-type-badge type-${esc(a.type)}">${TYPE_LABELS[a.type] || a.type}</span>
+                        </span>
                         <span class="category-currency">${esc(a.currency)}</span>
                         <span class="category-balance">${balance}</span>
                         <span class="category-actions">

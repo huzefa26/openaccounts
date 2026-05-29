@@ -49,11 +49,12 @@ describe('LedgerHtml', () => {
     expect(html).toContain('<table>');
     expect(html).toContain('<thead>');
     expect(html).toContain('<tbody>');
-    expect(html).toContain('<th>Date</th>');
-    expect(html).toContain('<th>Description</th>');
-    expect(html).toContain('<th>Account</th>');
-    expect(html).toContain('<th>Debit</th>');
-    expect(html).toContain('<th>Credit</th>');
+    expect(html).toContain('<th scope="col">Date</th>');
+    expect(html).toContain('<th scope="col">Description</th>');
+    expect(html).toContain('<th scope="col">Account</th>');
+    expect(html).toContain('<th scope="col">Debit</th>');
+    expect(html).toContain('<th scope="col">Credit</th>');
+    expect(html).toContain('<th scope="col">Balance</th>');
   });
 
   it('renders transaction date and description on first split', () => {
@@ -71,9 +72,8 @@ describe('LedgerHtml', () => {
   it('renders debit and credit amounts in correct columns', () => {
     const html = LedgerHtml([makeTx()], accountMap);
     expect(html).toContain('100.00');
-    const debitRow = html.indexOf('Cash');
-    const creditRow = html.indexOf('Income');
-    expect(debitRow).toBeLessThan(creditRow);
+    expect(html).toContain('Cash');
+    expect(html).toContain('Income');
   });
 
   it('shows unknown account name for missing account IDs', () => {

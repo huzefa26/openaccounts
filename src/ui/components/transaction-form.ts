@@ -25,6 +25,7 @@ export function TransactionFormHtml(accounts: Account[]): string {
       <label data-field>
         Description
         <input type="text" id="tx-desc" placeholder="e.g. Grocery shopping" />
+        <span data-hint>e.g. Grocery shopping, Rent payment</span>
       </label>
 
       <div class="section-card from">
@@ -61,7 +62,10 @@ function splitRowHtml(accounts: Account[], side: 'from' | 'to', idx: number): st
         <option value="">— Select category —</option>
         ${accounts.map((a) => `<option value="${a.id}">${a.name}</option>`).join('')}
       </select>
-      <input type="number" data-split-amount placeholder="0.00" step="0.01" min="0" required />
+      <span class="split-amount-wrap">
+        <span class="currency-prefix">$</span>
+        <input type="number" data-split-amount placeholder="0.00" step="0.01" min="0" required />
+      </span>
       <button type="button" class="remove-split" disabled title="Remove entry">&minus;</button>
     </div>`;
 }

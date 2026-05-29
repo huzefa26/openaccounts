@@ -2,7 +2,7 @@ import { StorageService } from '../lib/storage';
 import { Router } from './router';
 import type { PageResult } from './router';
 import { CategoriesPageHtml, mountCategoriesPage } from './pages/categories';
-import { LedgerHtml } from './pages/ledger';
+import { LedgerHtml, mountLedgerPage } from './pages/ledger';
 import { TransactionFormHtml, mountTransactionForm } from './components/transaction-form';
 import { RecentEntriesHtml } from './components/recent-entries';
 
@@ -35,9 +35,9 @@ export class App {
           <h2>Home</h2>
           ${TransactionFormHtml(accounts)}
           <div class="stats-grid">
-            <article class="card"><h3>Today</h3><p class="text-light">$0.00</p></article>
-            <article class="card"><h3>This Month</h3><p class="text-light">$0.00</p></article>
-            <article class="card"><h3>Avg / Day</h3><p class="text-light">$0.00</p></article>
+            <article class="metric-card"><h3>Today</h3><p class="metric-value" aria-label="Zero dollars">$0.00</p></article>
+            <article class="metric-card"><h3>This Month</h3><p class="metric-value" aria-label="Zero dollars">$0.00</p></article>
+            <article class="metric-card"><h3>Avg / Day</h3><p class="metric-value" aria-label="Zero dollars">$0.00</p></article>
           </div>
           <section>
             <header class="hstack justify-between items-center">
@@ -69,6 +69,7 @@ export class App {
     const accountMap = new Map(accounts.map((a) => [a.id!, a]));
     return {
       html: `<h2>Ledger</h2>${LedgerHtml(transactions, accountMap)}`,
+      mount: (el) => mountLedgerPage(el, transactions, accountMap),
     };
   }
 

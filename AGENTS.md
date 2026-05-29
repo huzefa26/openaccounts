@@ -9,6 +9,10 @@ User authenticates with their Google Account. For their sign up, they give acces
 - Work on one feature at a time while not breaking existing features (unless allowed by the user).
 - Stop wasting time and token on petty things like moving files or not - if it is a better practice, do it. Just follow rules and ideas consistently.
 
+## Design System
+
+A UI design skill is available at `.opencode/skills/openaccounts-ui/` (name: `personal-accounting-ui`). Load it with the `skill` tool before writing any UI code. It defines the visual language, design tokens, colors, typography, spacing, and interaction principles for the entire app. The token values are in `references/tokens.md`.
+
 ## Stack
 
 | Concern | Choice |
