@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { LedgerHtml } from './ledger';
-import type { Transaction, Account } from '../types/storage';
+import type { Transaction, Account } from '../../types/storage';
 
 const accounts: Account[] = [
   {

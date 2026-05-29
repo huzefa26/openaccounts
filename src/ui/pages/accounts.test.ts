@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { AccountsPage } from './accounts';
-import type { Account } from '../types/storage';
+import type { Account } from '../../types/storage';
 
 function makeAccount(overrides: Partial<Account> = {}): Account {
   return {

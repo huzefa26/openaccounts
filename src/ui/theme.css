@@ -1,6 +1,37 @@
 body {
   --font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
-  max-width: 720px;
-  margin: 2rem auto;
-  padding: 0 1rem;
+}
+
+aside[data-sidebar] {
+  background: var(--bg-subtle);
+  border-right: 1px solid var(--border-color);
+}
+
+aside[data-sidebar] nav a {
+  text-decoration: none;
+  color: var(--text);
+  display: block;
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius);
+  transition: background 0.15s;
+}
+
+aside[data-sidebar] nav a:hover,
+aside[data-sidebar] nav a.active {
+  background: var(--bg-active, rgba(128, 128, 128, 0.1));
+}
+
+aside[data-sidebar] nav a.active {
+  font-weight: 600;
+}
+
+main {
+  padding: var(--space-4);
+}
+
+button[data-sidebar-toggle] {
+  position: fixed;
+  top: var(--space-2);
+  left: var(--space-2);
+  z-index: 100;
 }

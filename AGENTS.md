@@ -7,6 +7,7 @@ User authenticates with their Google Account. For their sign up, they give acces
 
 - Use tokens effectively. First plan, reiterate the plan and then code.
 - Work on one feature at a time while not breaking existing features (unless allowed by the user).
+- Stop wasting time and token on petty things like moving files or not - if it is a better practice, do it. Just follow rules and ideas consistently.
 
 ## Stack
 

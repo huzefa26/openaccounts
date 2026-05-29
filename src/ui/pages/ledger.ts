@@ -1,4 +1,4 @@
-import type { Transaction, Account } from '../types/storage';
+import type { Transaction, Account } from '../../types/storage';
 
 export function LedgerHtml(
   transactions: Transaction[],

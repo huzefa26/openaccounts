@@ -1,5 +1,5 @@
 // a temporary file to display list of accounts in development
-import type { Account } from '../types/storage';
+import type { Account } from '../../types/storage';
 
 const TYPE_LABELS: Record<string, string> = {
   asset: 'Assets',

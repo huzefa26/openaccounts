@@ -6,8 +6,23 @@
     <title>OpenAccounts</title>
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
   </head>
-  <body>
-    <main id="app"></main>
+  <body data-sidebar-layout="always">
+    <aside data-sidebar>
+      <header>
+        <h2>OpenAccounts</h2>
+      </header>
+      <nav>
+        <ul>
+          <li><a href="#home">Home</a></li>
+          <li><a href="#ledger">Ledger</a></li>
+          <li><a href="#accounts">Accounts</a></li>
+          <li><a href="#profile">Profile</a></li>
+        </ul>
+      </nav>
+    </aside>
+    <main id="app">
+      <button data-sidebar-toggle aria-label="Toggle menu" class="outline small">☰</button>
+    </main>
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>

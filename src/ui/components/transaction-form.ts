@@ -1,4 +1,4 @@
-import type { Account } from '../types/storage';
+import type { Account } from '../../types/storage';
 
 export interface TransactionFormData {
   date: string;

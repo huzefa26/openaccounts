@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { TransactionFormHtml, mountTransactionForm } from './transaction-form';
-import type { Account } from '../types/storage';
+import type { Account } from '../../types/storage';
 
 function makeAccount(overrides: Partial<Account> = {}): Account {
   return {

@@ -11,7 +11,8 @@ async function main(): Promise<void> {
 
   const db = await openDB();
   const storage = new StorageService(db);
-  await App(el, storage);
+  const app = new App(el, storage);
+  app.start();
 }
 
 main();
