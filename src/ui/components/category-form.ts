@@ -14,9 +14,8 @@ export function CategoryFormModalHtml(): string {
   return `
     <dialog id="category-modal">
       <form method="dialog" id="category-form">
-        <header class="hstack justify-between items-center">
+        <header>
           <h3 id="category-modal-title">New Category</h3>
-          <button type="button" id="category-modal-close" class="outline small" aria-label="Close">&times;</button>
         </header>
 
         <label data-field>
@@ -77,7 +76,6 @@ export function mountCategoryFormModal(
   const openingIn = el.querySelector<HTMLInputElement>('#cat-opening')!;
   const saveBtn = el.querySelector<HTMLButtonElement>('#cat-save')!;
   const cancelBtn = el.querySelector<HTMLButtonElement>('#cat-cancel')!;
-  const closeBtn = el.querySelector<HTMLButtonElement>('#category-modal-close')!;
   const form = el.querySelector<HTMLFormElement>('#category-form')!;
 
   let editing: Account | null = null;
@@ -95,25 +93,6 @@ export function mountCategoryFormModal(
 
   function open(editingAccount?: Account): void {
     editing = editingAccount ?? null;
-
-    if (editing && editing.isPredefined) {
-      nameIn.value = editing.name;
-      typeIn.value = editing.type;
-      currencyIn.value = editing.currency;
-      openingIn.value = (editing.openingBalance ?? 0).toFixed(2);
-      updateParentOptions(editing.type);
-      parentIn.value = editing.parentId ? String(editing.parentId) : '';
-
-      nameIn.disabled = true;
-      typeIn.disabled = true;
-      currencyIn.disabled = true;
-      openingIn.disabled = true;
-      parentIn.disabled = true;
-      saveBtn.style.display = 'none';
-      title.textContent = 'Edit Category (read-only)';
-      dialog.showModal();
-      return;
-    }
 
     nameIn.disabled = false;
     typeIn.disabled = false;
@@ -167,7 +146,6 @@ export function mountCategoryFormModal(
   });
 
   cancelBtn.addEventListener('click', close);
-  closeBtn.addEventListener('click', close);
 
   return { open, close };
 }

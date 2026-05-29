@@ -36,6 +36,15 @@ button[data-sidebar-toggle] {
   z-index: 100;
 }
 
+@media (min-width: 768px) {
+  body[data-sidebar-layout="toggle"] aside[data-sidebar] {
+    display: flex !important;
+  }
+  button[data-sidebar-toggle] {
+    display: none;
+  }
+}
+
 /* Page content constraint */
 .page-content {
   max-width: 720px;

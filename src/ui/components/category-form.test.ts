@@ -112,14 +112,14 @@ describe('mountCategoryFormModal', () => {
     expect(typeIn.value).toBe('expense');
   });
 
-  it('open sets read-only mode for predefined accounts', () => {
+  it('open allows editing predefined accounts', () => {
     const predefined = makeAccount({ id: 5, name: 'Bank', isPredefined: true });
     const modal = mountCategoryFormModal(container, accounts, async () => {});
     modal.open(predefined);
     const nameIn = container.querySelector<HTMLInputElement>('#cat-name')!;
     const saveBtn = container.querySelector<HTMLButtonElement>('#cat-save')!;
-    expect(nameIn.disabled).toBe(true);
-    expect(saveBtn.style.display).toBe('none');
+    expect(nameIn.disabled).toBe(false);
+    expect(saveBtn.style.display).not.toBe('none');
   });
 
   it('close hides the dialog', () => {
