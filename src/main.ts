@@ -1,5 +1,6 @@
 import '@knadh/oat/oat.min.css';
 import '@knadh/oat/oat.min.js';
+import './ui/theme.css';
 import { openDB } from './lib/db';
 import { StorageService } from './lib/storage';
 import { App } from './ui/app';
