@@ -9,24 +9,17 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Raleway:wght@400;500;600&display=swap" rel="stylesheet">
   </head>
-  <body data-sidebar-layout>
+  <body>
     <nav data-topnav>
-      <button data-sidebar-toggle aria-label="Toggle menu">☰</button>
-      <span>OpenAccounts</span>
+      <button data-nav-toggle aria-label="Toggle navigation">☰</button>
+      <span class="topnav-brand">OpenAccounts</span>
+      <div class="topnav-links" data-nav-links>
+        <a href="#home" data-nav>Home</a>
+        <a href="#ledger" data-nav>Ledger</a>
+        <a href="#categories" data-nav>Categories</a>
+        <a href="#profile" data-nav>Profile</a>
+      </div>
     </nav>
-    <aside data-sidebar>
-      <header>
-        <h2>OpenAccounts</h2>
-      </header>
-      <nav>
-        <ul>
-          <li><a href="#home">Home</a></li>
-          <li><a href="#ledger">Ledger</a></li>
-          <li><a href="#categories">Categories</a></li>
-          <li><a href="#profile">Profile</a></li>
-        </ul>
-      </nav>
-    </aside>
     <main id="app">
     </main>
     <script type="module" src="/src/main.ts"></script>

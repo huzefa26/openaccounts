@@ -35,10 +35,10 @@ export class Router {
     if (hash === this.currentHash) return;
     this.currentHash = hash;
 
-    const sidebarLinks = document.querySelectorAll<HTMLLinkElement>(
-      'aside[data-sidebar] nav a',
+    const navLinks = document.querySelectorAll<HTMLLinkElement>(
+      'a[data-nav]',
     );
-    sidebarLinks.forEach((link) => {
+    navLinks.forEach((link) => {
       link.classList.toggle(
         'active',
         link.getAttribute('href') === `#${hash}`,
