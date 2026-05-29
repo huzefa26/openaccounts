@@ -12,10 +12,8 @@ export interface TransactionFormData {
 
 export function TransactionFormHtml(accounts: Account[]): string {
   return `
-    <article class="card" id="tx-form">
-      <header>
-        <h2>New Transaction</h2>
-      </header>
+    <div id="tx-form">
+      <h2>New Transaction</h2>
 
       <label data-field>
         Date
@@ -51,7 +49,7 @@ export function TransactionFormHtml(accounts: Account[]): string {
       <footer class="hstack justify-end">
         <button id="save-tx">Track</button>
       </footer>
-    </article>`;
+    </div>`;
 }
 
 function splitRowHtml(accounts: Account[], side: 'from' | 'to', idx: number): string {
@@ -131,7 +129,18 @@ export function mountTransactionForm(
 
   form.addEventListener('input', onInput);
   form.addEventListener('change', onInput);
+  form.addEventListener('keydown', (e: Event) => {
+    const ke = e as KeyboardEvent;
+    if ((ke.metaKey || ke.ctrlKey) && ke.key === 'Enter') {
+      ke.preventDefault();
+      saveTx();
+    }
+  });
   updateRemoveButtons();
+
+  // Autofocus description
+  const descInput = form.querySelector<HTMLInputElement>('#tx-desc');
+  descInput?.focus();
 
   form.addEventListener('click', (e) => {
     const target = e.target as HTMLElement;
@@ -170,49 +179,54 @@ export function mountTransactionForm(
     }
 
     if (target.matches('#save-tx') || target.closest('#save-tx')) {
-      const fromRows = form.querySelectorAll<HTMLElement>('#from-container .split-row');
-      const toRows = form.querySelectorAll<HTMLElement>('#to-container .split-row');
-      const splits: TransactionFormData['splits'] = [];
-
-      for (const row of fromRows) {
-        const accountId = parseInt(
-          (row.querySelector<HTMLSelectElement>('[data-split-account]')?.value ?? ''),
-        );
-        const amount = parseFloat(
-          (row.querySelector<HTMLInputElement>('[data-split-amount]')?.value ?? '0'),
-        );
-        if (isNaN(accountId) || isNaN(amount) || amount <= 0) return;
-        splits.push({ accountId, amount, type: 'credit' });
-      }
-
-      for (const row of toRows) {
-        const accountId = parseInt(
-          (row.querySelector<HTMLSelectElement>('[data-split-account]')?.value ?? ''),
-        );
-        const amount = parseFloat(
-          (row.querySelector<HTMLInputElement>('[data-split-amount]')?.value ?? '0'),
-        );
-        if (isNaN(accountId) || isNaN(amount) || amount <= 0) return;
-        splits.push({ accountId, amount, type: 'debit' });
-      }
-
-      if (splits.length < 2) return;
-
-      let debits = 0;
-      let credits = 0;
-      for (const s of splits) {
-        if (s.type === 'debit') debits += s.amount;
-        else credits += s.amount;
-      }
-      if (Math.abs(debits - credits) >= 0.001) return;
-
-      const date = (form.querySelector<HTMLInputElement>('#tx-date')?.value ?? '').trim();
-      const description = (form.querySelector<HTMLInputElement>('#tx-desc')?.value ?? '').trim();
-      if (!date || !description) return;
-
-      onSave({ date, description, splits });
+      saveTx();
     }
   });
+
+  function saveTx(): void {
+    const f = form!;
+    const fromRows = f.querySelectorAll<HTMLElement>('#from-container .split-row');
+    const toRows = f.querySelectorAll<HTMLElement>('#to-container .split-row');
+    const splits: TransactionFormData['splits'] = [];
+
+    for (const row of fromRows) {
+      const accountId = parseInt(
+        (row.querySelector<HTMLSelectElement>('[data-split-account]')?.value ?? ''),
+      );
+      const amount = parseFloat(
+        (row.querySelector<HTMLInputElement>('[data-split-amount]')?.value ?? '0'),
+      );
+      if (isNaN(accountId) || isNaN(amount) || amount <= 0) return;
+      splits.push({ accountId, amount, type: 'credit' });
+    }
+
+    for (const row of toRows) {
+      const accountId = parseInt(
+        (row.querySelector<HTMLSelectElement>('[data-split-account]')?.value ?? ''),
+      );
+      const amount = parseFloat(
+        (row.querySelector<HTMLInputElement>('[data-split-amount]')?.value ?? '0'),
+      );
+      if (isNaN(accountId) || isNaN(amount) || amount <= 0) return;
+      splits.push({ accountId, amount, type: 'debit' });
+    }
+
+    if (splits.length < 2) return;
+
+    let debits = 0;
+    let credits = 0;
+    for (const s of splits) {
+      if (s.type === 'debit') debits += s.amount;
+      else credits += s.amount;
+    }
+    if (Math.abs(debits - credits) >= 0.001) return;
+
+    const date = (f.querySelector<HTMLInputElement>('#tx-date')?.value ?? '').trim();
+    const description = (f.querySelector<HTMLInputElement>('#tx-desc')?.value ?? '').trim();
+    if (!date || !description) return;
+
+    onSave({ date, description, splits });
+  }
 }
 
 function todayISO(): string {

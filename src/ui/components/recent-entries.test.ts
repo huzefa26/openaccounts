@@ -25,7 +25,7 @@ function makeTx(overrides: Partial<Transaction> = {}): Transaction {
 describe('RecentEntriesHtml', () => {
   it('shows empty state when no transactions', () => {
     const html = RecentEntriesHtml([], accountMap);
-    expect(html).toContain('No entries yet');
+    expect(html).toContain('No transactions yet');
   });
 
   it('renders table with transactions sorted by date desc', () => {
@@ -35,16 +35,16 @@ describe('RecentEntriesHtml', () => {
     expect(html.indexOf('Second')).toBeLessThan(html.indexOf('First'));
   });
 
-  it('limits to 5 entries', () => {
+  it('limits to 8 entries', () => {
     const txs = Array.from({ length: 10 }, (_, i) =>
       makeTx({ id: i, date: `2026-01-${String(i + 1).padStart(2, '0')}`, description: `Tx ${i}` }),
     );
     const html = RecentEntriesHtml(txs, accountMap);
     const matches = html.match(/<tr>/g);
-    expect(matches).toHaveLength(6); // 5 data rows + 1 header
+    expect(matches).toHaveLength(9); // 8 data rows + 1 header
   });
 
-  it('shows total amount (sum of debits or credits)', () => {
+  it('shows debit and credit amounts', () => {
     const tx = makeTx({
       splits: [
         { accountId: 1, amount: 200, type: 'debit', currency: 'USD' },
@@ -52,7 +52,7 @@ describe('RecentEntriesHtml', () => {
       ],
     });
     const html = RecentEntriesHtml([tx], accountMap);
-    expect(html).toContain('$400.00');
+    expect(html).toContain('200.00');
   });
 
   it('escapes HTML in description', () => {

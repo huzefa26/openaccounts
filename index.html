@@ -7,21 +7,53 @@
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Raleway:wght@400;500;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
   </head>
   <body>
-    <nav data-topnav>
-      <button data-nav-toggle aria-label="Toggle navigation">☰</button>
-      <span class="topnav-brand">OpenAccounts</span>
-      <div class="topnav-links" data-nav-links>
-        <a href="#home" data-nav>Home</a>
-        <a href="#ledger" data-nav>Ledger</a>
-        <a href="#categories" data-nav>Categories</a>
-        <a href="#profile" data-nav>Profile</a>
-      </div>
-    </nav>
-    <main id="app">
-    </main>
+    <div data-sidebar-layout>
+      <aside data-sidebar>
+        <header>
+          <div class="sidebar-logo">myAccounts</div>
+        </header>
+        <nav>
+          <ul>
+            <li><a href="#home" data-nav aria-current="page">Home</a></li>
+            <li><a href="#ledger" data-nav>Ledger</a></li>
+            <li><a href="#categories" data-nav>Accounts</a></li>
+            <li><a href="#analytics" data-nav>Analytics</a></li>
+          </ul>
+        </nav>
+        <footer class="sidebar-footer">
+          <div class="sidebar-user">
+            <div class="sidebar-avatar"></div>
+            <span class="sidebar-username">User</span>
+          </div>
+          <a href="#profile" data-nav class="sidebar-signout">Sign out</a>
+        </footer>
+      </aside>
+      <main id="app"></main>
+      <nav data-topnav>
+        <button data-sidebar-toggle aria-label="Toggle sidebar">☰</button>
+      </nav>
+      <nav class="bottom-tabs">
+        <a href="#home" data-nav aria-current="page">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+          <span>Home</span>
+        </a>
+        <a href="#ledger" data-nav>
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+          <span>Ledger</span>
+        </a>
+        <a href="#categories" data-nav>
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
+          <span>Accounts</span>
+        </a>
+        <a href="#analytics" data-nav>
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+          <span>Analytics</span>
+        </a>
+      </nav>
+    </div>
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>

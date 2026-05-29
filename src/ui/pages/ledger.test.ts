@@ -40,20 +40,20 @@ function makeTx(overrides: Partial<Transaction> = {}): Transaction {
 describe('LedgerHtml', () => {
   it('shows empty state when no transactions', () => {
     const html = LedgerHtml([], accountMap);
-    expect(html).toContain('No entries yet');
-    expect(html).not.toContain('<table');
+    expect(html).toContain('No transactions found');
+    expect(html).not.toContain('ledger-table');
   });
 
   it('renders table with thead and tbody', () => {
     const html = LedgerHtml([makeTx()], accountMap);
-    expect(html).toContain('<table>');
+    expect(html).toContain('ledger-table');
     expect(html).toContain('<thead>');
     expect(html).toContain('<tbody>');
-    expect(html).toContain('<th>Date</th>');
-    expect(html).toContain('<th>Description</th>');
-    expect(html).toContain('<th>Account</th>');
-    expect(html).toContain('<th>Debit</th>');
-    expect(html).toContain('<th>Credit</th>');
+    expect(html).toContain('col-date');
+    expect(html).toContain('col-description');
+    expect(html).toContain('col-account');
+    expect(html).toContain('col-debit');
+    expect(html).toContain('col-credit');
   });
 
   it('renders transaction date and description on first split', () => {

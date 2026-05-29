@@ -22,11 +22,11 @@ function makeAccount(overrides: Partial<Account> = {}): Account {
 describe('CategoriesPageHtml', () => {
   it('renders header', () => {
     const html = CategoriesPageHtml([]);
-    expect(html).toContain('Categories');
-    expect(html).toContain('+ New Category');
+    expect(html).toContain('Chart of Accounts');
+    expect(html).toContain('+ New Account');
   });
 
-  it('groups categories by type', () => {
+  it('groups accounts by type', () => {
     const accounts = [
       makeAccount({ name: 'Cash', type: 'asset' }),
       makeAccount({ name: 'Loan', type: 'liability' }),
@@ -56,10 +56,9 @@ describe('CategoriesPageHtml', () => {
       makeAccount({ name: 'Cash', type: 'asset' }),
     ]);
     expect(html).toContain('Assets');
-    expect(html).toContain('category-group');
-    // Only one type section should be present (Liabilities, Equity, Income, Expenses each appear in modal type dropdown)
-    const groupMatches = html.match(/class="category-group"/g);
-    expect(groupMatches).toHaveLength(1);
+    expect(html).toContain('account-section');
+    const sectionMatches = html.match(/class="account-section"/g);
+    expect(sectionMatches).toHaveLength(1);
   });
 
   it('renders Edit button for each category', () => {

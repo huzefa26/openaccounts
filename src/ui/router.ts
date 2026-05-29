@@ -39,11 +39,16 @@ export class Router {
       'a[data-nav]',
     );
     navLinks.forEach((link) => {
-      link.classList.toggle(
-        'active',
-        link.getAttribute('href') === `#${hash}`,
-      );
+      const isActive = link.getAttribute('href') === `#${hash}`;
+      link.classList.toggle('active', isActive);
+      link.toggleAttribute('aria-current', isActive);
     });
+
+    // Close mobile sidebar after navigation
+    const layout = document.querySelector('[data-sidebar-layout]');
+    if (layout?.hasAttribute('data-sidebar-open')) {
+      layout.removeAttribute('data-sidebar-open');
+    }
 
     const handler = this.routes.get(hash);
     if (!handler) {
