@@ -4,6 +4,7 @@ import {
   TransactionFormHtml,
   mountTransactionForm,
 } from './transaction-form';
+import { LedgerHtml } from './ledger';
 
 export async function App(
   el: HTMLElement,
@@ -11,6 +12,7 @@ export async function App(
 ): Promise<void> {
   const accounts = await storage.getAllAccounts();
   const transactions = await storage.getAllTransactions();
+  const accountMap = new Map(accounts.map((a) => [a.id!, a]));
 
   el.innerHTML = `
     <header>
@@ -19,7 +21,7 @@ export async function App(
     ${TransactionFormHtml(accounts)}
     <section id="ledger-section">
       <h2>Ledger</h2>
-      ${transactions.length === 0 ? '<p>No entries yet.</p>' : ''}
+      ${LedgerHtml(transactions, accountMap)}
     </section>
     ${AccountsPage(accounts)}
   `;
@@ -32,6 +34,6 @@ export async function App(
     });
     const all = await storage.getAllTransactions();
     const ledgerSection = el.querySelector('#ledger-section')!;
-    ledgerSection.innerHTML = `<h2>Ledger</h2><p>${all.length} transaction(s) saved.</p>`;
+    ledgerSection.innerHTML = `<h2>Ledger</h2>${LedgerHtml(all, accountMap)}`;
   });
 }
