@@ -27,25 +27,29 @@ export function TransactionFormHtml(accounts: Account[]): string {
         <input type="text" id="tx-desc" placeholder="e.g. Grocery shopping" />
       </label>
 
-      <h3>From</h3>
-      <div id="from-container">
-        ${splitRowHtml(accounts, 'from', 0)}
+      <div class="section-card from">
+        <h3>From</h3>
+        <div id="from-container">
+          ${splitRowHtml(accounts, 'from', 0)}
+        </div>
+        <button type="button" class="add-link" id="add-from">+ Add from account</button>
       </div>
-      <button type="button" class="outline" id="add-from">+ Add From</button>
 
-      <h3>To</h3>
-      <div id="to-container">
-        ${splitRowHtml(accounts, 'to', 1)}
+      <div class="section-card to">
+        <h3>To</h3>
+        <div id="to-container">
+          ${splitRowHtml(accounts, 'to', 1)}
+        </div>
+        <button type="button" class="add-link" id="add-to">+ Add to account</button>
       </div>
-      <button type="button" class="outline" id="add-to">+ Add To</button>
 
-      <p id="balance-indicator">
-        <span id="balance-status">&#10003;</span>
+      <p id="balance-indicator" class="balance-zero">
         <span id="balance-text">$0.00 From = $0.00 To</span>
+        <span id="balance-status"></span>
       </p>
 
       <footer class="hstack justify-end">
-        <button id="save-tx">Save Transaction</button>
+        <button id="save-tx">Track</button>
       </footer>
     </article>`;
 }
@@ -58,7 +62,7 @@ function splitRowHtml(accounts: Account[], side: 'from' | 'to', idx: number): st
         ${accounts.map((a) => `<option value="${a.id}">${a.name}</option>`).join('')}
       </select>
       <input type="number" data-split-amount placeholder="0.00" step="0.01" min="0" required />
-      <button type="button" class="outline remove-split" disabled title="Remove entry">&minus;</button>
+      <button type="button" class="remove-split" disabled title="Remove entry">&minus;</button>
     </div>`;
 }
 
@@ -94,15 +98,22 @@ export function mountTransactionForm(
 
     const text = form.querySelector('#balance-text')!;
     const status = form.querySelector('#balance-status')!;
+    const indicator = form.querySelector('#balance-indicator')!;
     const diff = Math.abs(fromTotal - toTotal);
-    if (diff < 0.001) {
+
+    indicator.className = '';
+    if (fromTotal === 0 && toTotal === 0) {
+      indicator.classList.add('balance-zero');
+      text.textContent = '$0.00 From = $0.00 To';
+      status.textContent = '';
+    } else if (diff < 0.001) {
+      indicator.classList.add('balance-equal');
       text.textContent = `$${fromTotal.toFixed(2)} From = $${toTotal.toFixed(2)} To`;
       status.textContent = '✓';
-      status.className = 'balanced';
     } else {
+      indicator.classList.add('balance-unequal');
       text.textContent = `$${fromTotal.toFixed(2)} From ≠ $${toTotal.toFixed(2)} To (diff: $${diff.toFixed(2)})`;
       status.textContent = '✗';
-      status.className = 'unbalanced';
     }
   };
 
@@ -187,11 +198,15 @@ export function mountTransactionForm(
 
       if (splits.length < 2) return;
 
-      const debits = splits.filter((s) => s.type === 'debit').reduce((s, x) => s + x.amount, 0);
-      const credits = splits.filter((s) => s.type === 'credit').reduce((s, x) => s + x.amount, 0);
-      if (Math.abs(debits - credits) > 0.001) return;
+      let debits = 0;
+      let credits = 0;
+      for (const s of splits) {
+        if (s.type === 'debit') debits += s.amount;
+        else credits += s.amount;
+      }
+      if (Math.abs(debits - credits) >= 0.001) return;
 
-      const date = (form.querySelector<HTMLInputElement>('#tx-date')?.value ?? '');
+      const date = (form.querySelector<HTMLInputElement>('#tx-date')?.value ?? '').trim();
       const description = (form.querySelector<HTMLInputElement>('#tx-desc')?.value ?? '').trim();
       if (!date || !description) return;
 

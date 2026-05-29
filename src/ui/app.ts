@@ -31,23 +31,22 @@ export class App {
 
     return {
       html: `
-        <style>
-          .stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-3); margin: var(--space-4) 0; }
-        </style>
-        <h2>Home</h2>
-        ${TransactionFormHtml(accounts)}
-        <div class="stats-grid">
-          <article class="card"><h3>Today</h3><p class="text-light">$0.00</p></article>
-          <article class="card"><h3>This Month</h3><p class="text-light">$0.00</p></article>
-          <article class="card"><h3>Avg / Day</h3><p class="text-light">$0.00</p></article>
-        </div>
-        <section>
-          <header class="hstack justify-between items-center">
-            <h3>Recent Entries</h3>
-            <a href="#ledger" class="button outline small">View full ledger &rarr;</a>
-          </header>
-          ${RecentEntriesHtml(transactions, accountMap)}
-        </section>`,
+        <div class="page-content">
+          <h2>Home</h2>
+          ${TransactionFormHtml(accounts)}
+          <div class="stats-grid">
+            <article class="card"><h3>Today</h3><p class="text-light">$0.00</p></article>
+            <article class="card"><h3>This Month</h3><p class="text-light">$0.00</p></article>
+            <article class="card"><h3>Avg / Day</h3><p class="text-light">$0.00</p></article>
+          </div>
+          <section>
+            <header class="hstack justify-between items-center">
+              <h3>Recent Entries</h3>
+              <a href="#ledger" class="button outline small">View full ledger &rarr;</a>
+            </header>
+            ${RecentEntriesHtml(transactions, accountMap)}
+          </section>
+        </div>`,
       mount: (el) => {
         mountTransactionForm(el, accounts, async (data) => {
           await this.storage.createTransaction({
@@ -75,12 +74,12 @@ export class App {
 
   private async accountsPage(): Promise<PageResult> {
     const accounts = await this.storage.getAllAccounts();
-    return { html: AccountsPage(accounts) };
+    return { html: `<div class="page-content">${AccountsPage(accounts)}</div>` };
   }
 
   private async profilePage(): Promise<PageResult> {
     return {
-      html: `<section><h2>Profile</h2><p>Coming soon.</p></section>`,
+      html: `<div class="page-content"><section><h2>Profile</h2><p>Coming soon.</p></section></div>`,
     };
   }
 }

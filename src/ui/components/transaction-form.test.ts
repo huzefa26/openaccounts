@@ -30,7 +30,7 @@ describe('TransactionFormHtml', () => {
     expect(html).toContain('New Transaction');
     expect(html).toContain('Date');
     expect(html).toContain('Description');
-    expect(html).toContain('Save Transaction');
+    expect(html).toContain('Track');
   });
 
   it('renders From and To sections', () => {
@@ -78,8 +78,8 @@ describe('TransactionFormHtml', () => {
     const html = TransactionFormHtml(accounts);
     expect(html).toContain('id="add-from"');
     expect(html).toContain('id="add-to"');
-    expect(html).toContain('+ Add From');
-    expect(html).toContain('+ Add To');
+    expect(html).toContain('+ Add from account');
+    expect(html).toContain('+ Add to account');
   });
 });
 
@@ -220,9 +220,9 @@ describe('mountTransactionForm', () => {
 
     fromAmounts[0].dispatchEvent(new Event('input', { bubbles: true }));
 
-    const status = container.querySelector('#balance-status')!;
-    expect(status.textContent).toBe('✓');
-    expect(status.className).toBe('balanced');
+    const indicator = container.querySelector('#balance-indicator')!;
+    expect(indicator.classList.contains('balance-equal')).toBe(true);
+    expect(container.querySelector('#balance-status')!.textContent).toBe('✓');
   });
 
   it('updateBalance shows unbalanced when From != To', () => {
@@ -232,8 +232,16 @@ describe('mountTransactionForm', () => {
     fromAmounts[0].value = '100';
     fromAmounts[0].dispatchEvent(new Event('input', { bubbles: true }));
 
-    const status = container.querySelector('#balance-status')!;
-    expect(status.textContent).toBe('✗');
-    expect(status.className).toBe('unbalanced');
+    const indicator = container.querySelector('#balance-indicator')!;
+    expect(indicator.classList.contains('balance-unequal')).toBe(true);
+    expect(container.querySelector('#balance-status')!.textContent).toBe('✗');
+  });
+
+  it('updateBalance shows zero state initially', () => {
+    mountTransactionForm(container, accounts, async () => {});
+
+    const indicator = container.querySelector('#balance-indicator')!;
+    expect(indicator.classList.contains('balance-zero')).toBe(true);
+    expect(container.querySelector('#balance-status')!.textContent).toBe('');
   });
 });
