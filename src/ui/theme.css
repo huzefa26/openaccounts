@@ -34,6 +34,21 @@ button[data-sidebar-toggle] {
   top: var(--space-2);
   left: var(--space-2);
   z-index: 100;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  border-radius: 50%;
+  font-size: 1.25rem;
+  cursor: pointer;
+}
+
+button[data-sidebar-toggle]:hover {
+  background: rgba(128, 128, 128, 0.1);
 }
 
 @media (min-width: 768px) {
@@ -43,6 +58,28 @@ button[data-sidebar-toggle] {
   button[data-sidebar-toggle] {
     display: none;
   }
+}
+
+/* Sidebar backdrop on mobile */
+[data-sidebar-backdrop] {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.3);
+  z-index: 1;
+}
+
+@media (max-width: 768px) {
+  body[data-sidebar-open] [data-sidebar-backdrop] {
+    display: block;
+  }
+}
+
+/* Raleway for data entry fields */
+input:not([type="button"]):not([type="submit"]):not([type="reset"]),
+select,
+textarea {
+  font-family: 'Raleway', system-ui, sans-serif;
 }
 
 /* Page content constraint */
