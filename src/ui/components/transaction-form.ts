@@ -63,15 +63,15 @@ export function TransactionFormHtml(accounts: Account[]): string {
 function splitRowHtml(accounts: Account[], side: 'from' | 'to', idx: number): string {
   return `
     <div class="split-row ${side}-row hstack gap-2" data-idx="${idx}">
-      <select data-split-account class="input" required style="flex:1;">
+      <select data-split-account class="input" required style="flex:1;" aria-label="${side === 'from' ? 'Source account' : 'Destination account'}">
         <option value="">— Select category —</option>
         ${accounts.map((a) => `<option value="${a.id}">${a.name}</option>`).join('')}
       </select>
       <span class="split-amount-wrap">
         <span class="currency-prefix">$</span>
-        <input type="number" data-split-amount class="input" placeholder="0.00" step="0.01" min="0" required style="border:none;width:90px;text-align:right;" />
+        <input type="number" data-split-amount class="input" placeholder="0.00" step="0.01" min="0" required style="border:none;width:90px;text-align:right;" aria-label="Amount" />
       </span>
-      <button type="button" class="remove-split" disabled title="Remove entry">&minus;</button>
+      <button type="button" class="remove-split" disabled title="Remove entry" aria-label="Remove row">&minus;</button>
     </div>`;
 }
 

@@ -110,9 +110,9 @@ function renderPage(allRows: SplitRow[], page: number): string {
       ? ''
       : `
         <nav class="pagination" aria-label="Ledger pagination">
-          <button data-page="${currentPage - 1}" ${currentPage <= 1 ? 'disabled' : ''}>← Prev</button>
+          <button data-page="${currentPage - 1}" ${currentPage <= 1 ? 'disabled' : ''} aria-label="Previous page">← Prev</button>
           <span class="page-info">Page ${currentPage} of ${totalPages}</span>
-          <button data-page="${currentPage + 1}" ${currentPage >= totalPages ? 'disabled' : ''}>Next →</button>
+          <button data-page="${currentPage + 1}" ${currentPage >= totalPages ? 'disabled' : ''} aria-label="Next page">Next →</button>
         </nav>`;
 
   return `

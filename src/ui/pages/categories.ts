@@ -42,8 +42,8 @@ export function CategoriesPageHtml(accounts: Account[]): string {
                         <span class="category-currency">${esc(a.currency)}</span>
                         <span class="category-balance">${balance}</span>
                         <span class="category-actions">
-                          <button class="outline small" data-edit-category="${a.id}">Edit</button>
-                          ${a.isPredefined ? '' : `<button class="outline small" data-delete-category="${a.id}">&times;</button>`}
+                          <button class="outline small" data-edit-category="${a.id}" aria-label="Edit ${esc(a.name)}">Edit</button>
+                          ${a.isPredefined ? '' : `<button class="outline small" data-delete-category="${a.id}" aria-label="Delete ${esc(a.name)}">&times;</button>`}
                         </span>
                       </div>`;
                   })

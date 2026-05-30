@@ -144,6 +144,12 @@ main {
   border: 1px solid var(--border);
 }
 
+/* Visible focus ring on all interactive elements */
+:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+
 /* ========================================
    Navigation — visually quiet per design
    ======================================== */
