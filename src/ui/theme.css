@@ -627,6 +627,31 @@ textarea {
   }
 }
 
+/* Inline delete confirmation */
+.category-confirm-delete {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-1) 0;
+  width: 100%;
+}
+
+.category-confirm-delete .confirm-text {
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  flex: 1;
+}
+
+.danger-btn {
+  background: var(--expense) !important;
+  color: var(--text-on-accent) !important;
+  border: none !important;
+}
+
+.danger-btn:hover {
+  background: #A93223 !important;
+}
+
 /* Account type badges */
 .account-type-badge {
   display: inline-flex;

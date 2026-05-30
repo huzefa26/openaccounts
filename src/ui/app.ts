@@ -138,8 +138,8 @@ export class App {
     const accounts = await this.storage.getAllAccounts();
     return {
       html: CategoriesPageHtml(accounts),
-      mount: (el) => {
-        mountCategoriesPage(el, accounts, this.storage, async () => {
+      mount: async (el) => {
+        await mountCategoriesPage(el, accounts, this.storage, async () => {
           const result = await this.categoriesPage();
           el.innerHTML = result.html;
           result.mount?.(el);
@@ -150,7 +150,7 @@ export class App {
 
   private async profilePage(): Promise<PageResult> {
     return {
-      html: `<div class="page-content"><section><h2>Profile</h2><p>Coming soon.</p></section></div>`,
+      html: `<div class="page-content"><section><p>Coming soon.</p></section></div>`,
     };
   }
 }

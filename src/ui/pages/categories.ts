@@ -57,12 +57,12 @@ export function CategoriesPageHtml(accounts: Account[]): string {
     </div>`;
 }
 
-export function mountCategoriesPage(
+export async function mountCategoriesPage(
   el: HTMLElement,
   accounts: Account[],
   storage: StorageService,
   onRefresh: () => Promise<void>,
-): void {
+): Promise<void> {
   const modal = mountCategoryFormModal(el, accounts, async (data: CategoryFormData, editing) => {
     if (editing) {
       await storage.updateAccount(editing.id!, {
@@ -89,7 +89,7 @@ export function mountCategoriesPage(
 
   el.querySelector('#new-category-btn')?.addEventListener('click', () => modal.open());
 
-  el.addEventListener('click', (e) => {
+  el.addEventListener('click', async (e) => {
     const editBtn = (e.target as HTMLElement).closest('[data-edit-category]');
     if (editBtn) {
       const id = Number(editBtn.getAttribute('data-edit-category'));
@@ -103,11 +103,44 @@ export function mountCategoriesPage(
       const id = Number(deleteBtn.getAttribute('data-delete-category'));
       const account = accounts.find((a) => a.id === id);
       if (!account) return;
-      if (!confirm(`Delete "${account.name}"? This cannot be undone.`)) return;
-      storage
-        .deleteAccount(id)
-        .then(() => onRefresh())
-        .catch((err) => alert(err instanceof Error ? err.message : 'Failed to delete category'));
+
+      const row = deleteBtn.closest<HTMLElement>('.category-row');
+      if (!row) return;
+
+      row.dataset.originalHtml = row.innerHTML;
+      row.innerHTML = `
+        <div class="category-confirm-delete">
+          <span class="confirm-text">Delete &ldquo;${esc(account.name)}&rdquo;? This cannot be undone.</span>
+          <span class="hstack gap-2">
+            <button class="outline small" data-cancel-delete>Cancel</button>
+            <button class="danger-btn small" data-confirm-delete="${id}">Delete</button>
+          </span>
+        </div>`;
+      return;
+    }
+
+    const cancelBtn = (e.target as HTMLElement).closest('[data-cancel-delete]');
+    if (cancelBtn) {
+      const row = cancelBtn.closest<HTMLElement>('.category-row');
+      if (!row) return;
+      row.innerHTML = row.dataset.originalHtml || '';
+      delete row.dataset.originalHtml;
+      return;
+    }
+
+    const confirmDeleteBtn = (e.target as HTMLElement).closest('[data-confirm-delete]');
+    if (confirmDeleteBtn) {
+      const id = Number(confirmDeleteBtn.getAttribute('data-confirm-delete'));
+      const row = confirmDeleteBtn.closest<HTMLElement>('.category-row');
+      try {
+        await storage.deleteAccount(id);
+        await onRefresh();
+      } catch (err) {
+        if (row) {
+          row.innerHTML = row.dataset.originalHtml || '';
+          delete row.dataset.originalHtml;
+        }
+      }
       return;
     }
   });
