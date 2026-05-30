@@ -1,127 +1,129 @@
 :root {
-  /* ========================================
-     Oat variable overrides → skill tokens
-     ======================================== */
+  /* =============================================
+     Canonical design tokens (per skill tokens.md)
+     ============================================= */
 
   /* Backgrounds */
-  --background: #FAFAF8;
-  --foreground: #1A1A1A;
-  --card: #FFFFFF;
-  --card-foreground: #1A1A1A;
-
-  /* Primaries */
-  --primary: #1E3A5F;
-  --primary-foreground: #FFFFFF;
-
-  /* Secondaries / muted */
-  --secondary: #E8EEF5;
-  --secondary-foreground: #1A1A1A;
-  --muted: #F4F4F5;
-  --muted-foreground: #6B6B65;
-  --faint: #FAFAF8;
-  --faint-foreground: #9B9B94;
-
-  /* Interactive accent (hover bg, not primary button) */
-  --accent: #E8EEF5;
-
-  /* Semantic states — general UI only */
-  --danger: #C0392B;
-  --danger-foreground: #FFFFFF;
-  --success: #1A7A4A;
-  --success-foreground: #FFFFFF;
-  --warning: #D97706;
-  --warning-foreground: #1A1A1A;
+  --bg:            #FAFAF8;
+  --surface:       #FFFFFF;
+  --overlay:       rgba(26,26,26,0.4);
 
   /* Borders */
-  --border: #E8E8E4;
-  --input: #E8E8E4;
-  --ring: #1E3A5F;
+  --border:        #E8E8E4;
+  --border-strong: #D0CFC9;
 
-  /* Typography */
-  --font-sans: 'Plus Jakarta Sans', -apple-system, sans-serif;
-  --font-mono: 'Geist Mono', 'Roboto Mono', monospace;
-
-  /* Radii */
-  --radius-small: 4px;
-  --radius-medium: 6px;
-  --radius-large: 8px;
-  --radius-full: 9999px;
-
-  /* Shadows — only for dropdowns/tooltips */
-  --shadow-small: none;
-  --shadow-medium: none;
-  --shadow-large: 0 4px 16px -4px rgba(0,0,0,0.12), 0 0 0 1px var(--border);
-
-  /* Transitions */
-  --transition-fast: 120ms ease;
-
-  /* ========================================
-     Skill-specific design tokens
-     ======================================== */
-
-  --bg: #FAFAF8;
-  --surface: #FFFFFF;
-  --overlay: rgba(26,26,26,0.4);
-
-  --text-primary: #1A1A1A;
+  /* Text */
+  --text-primary:   #1A1A1A;
   --text-secondary: #6B6B65;
-  --text-tertiary: #9B9B94;
-  --text-disabled: #BEBEB8;
+  --text-tertiary:  #9B9B94;
+  --text-disabled:  #BEBEB8;
   --text-on-accent: #FFFFFF;
 
   /* Financial semantic — reserved for debit/credit sign only */
-  --income: #1A7A4A;
-  --income-bg: #EDF7F2;
-  --expense: #C0392B;
+  --income:     #1A7A4A;
+  --income-bg:  #EDF7F2;
+  --expense:    #C0392B;
   --expense-bg: #FDF2F1;
-  --neutral: #2C5282;
+  --neutral:    #2C5282;
   --neutral-bg: #EBF2FF;
 
   /* Interactive */
+  --accent:       #1E3A5F;
   --accent-hover: #162C4A;
   --accent-light: #E8EEF5;
-  --link: #2563EB;
+  --link:         #2563EB;
 
   /* State — general UI only, never for financial data */
-  --error: #C0392B;
-  --error-bg: #FDF2F1;
+  --error:      #C0392B;
+  --error-bg:   #FDF2F1;
+  --warning:    #D97706;
   --warning-bg: #FEF9EC;
+  --success:    #1A7A4A;
   --success-bg: #EDF7F2;
 
-  /* Font families (explicit) */
-  --font-ui: 'Plus Jakarta Sans', -apple-system, sans-serif;
+  /* Typography */
+  --font-ui:      'Plus Jakarta Sans', -apple-system, sans-serif;
   --font-numeric: 'Geist Mono', 'Roboto Mono', monospace;
 
   /* Type scale */
-  --text-xs: 11px;
-  --text-sm: 13px;
+  --text-xs:  11px;
+  --text-sm:  13px;
   --text-base: 15px;
-  --text-lg: 17px;
-  --text-xl: 20px;
+  --text-lg:  17px;
+  --text-xl:  20px;
   --text-2xl: 26px;
   --text-3xl: 34px;
 
-  /* Spacing (8px grid) */
-  --space-1: 4px;
-  --space-2: 8px;
-  --space-3: 12px;
-  --space-4: 16px;
-  --space-5: 20px;
-  --space-6: 24px;
-  --space-8: 32px;
+  /* Spacing (8px grid — all values multiples of 4) */
+  --space-1:  4px;
+  --space-2:  8px;
+  --space-3:  12px;
+  --space-4:  16px;
+  --space-5:  20px;
+  --space-6:  24px;
+  --space-8:  32px;
   --space-10: 40px;
   --space-12: 48px;
   --space-16: 64px;
 
   /* Shape */
-  --radius-sm: 4px;
-  --radius-md: 6px;
-  --radius-lg: 8px;
+  --radius-sm:   4px;
+  --radius-md:   6px;
+  --radius-lg:   8px;
+  --radius-full: 9999px;
 
   /* Shadows — popover/tooltip only */
   --shadow-pop: 0 4px 16px -4px rgba(0,0,0,0.12), 0 0 0 1px var(--border);
 
+  /* Focus ring — same as --accent but not overridden by Oat aliases */
+  --ring: #1E3A5F;
+
+  /* Transitions — color and border changes only */
   --transition-base: 120ms ease;
+
+  /* =============================================
+     Oat CSS variable aliases
+     Oat uses its own variable names internally.
+     These aliases route them to our canonical tokens.
+     ============================================= */
+
+  --background:       var(--bg);
+  --foreground:       var(--text-primary);
+  --card:             var(--surface);
+  --card-foreground:  var(--text-primary);
+
+  --primary:           var(--accent);
+  --primary-foreground: var(--text-on-accent);
+
+  --secondary:         var(--accent-light);
+  --secondary-foreground: var(--text-primary);
+  --muted:             var(--bg);
+  --muted-foreground:  var(--text-secondary);
+  --faint:             var(--bg);
+  --faint-foreground:  var(--text-tertiary);
+
+  /* Oat's --accent is hover/selection bg → our accent-light */
+  --accent:            var(--accent-light);
+
+  --danger:            var(--expense);
+  --danger-foreground: var(--text-on-accent);
+  --success-foreground: var(--text-on-accent);
+  --warning-foreground: var(--text-primary);
+
+  --input:             var(--border);
+
+  --font-sans:         var(--font-ui);
+  --font-mono:         var(--font-numeric);
+
+  --radius-small:      var(--radius-sm);
+  --radius-medium:     var(--radius-md);
+  --radius-large:      var(--radius-lg);
+
+  --shadow-small:      none;
+  --shadow-medium:     none;
+  --shadow-large:      var(--shadow-pop);
+
+  --transition-fast:   var(--transition-base);
 }
 
 /* ========================================
