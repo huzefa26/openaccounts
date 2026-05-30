@@ -92,7 +92,7 @@
   --card:             var(--surface);
   --card-foreground:  var(--text-primary);
 
-  --primary:           var(--accent);
+  --primary:           #1E3A5F;
   --primary-foreground: var(--text-on-accent);
 
   --secondary:         var(--accent-light);
@@ -110,7 +110,7 @@
   --success-foreground: var(--text-on-accent);
   --warning-foreground: var(--text-primary);
 
-  --input:             var(--border);
+  --input:             var(--border-strong);
 
   --font-sans:         var(--font-ui);
   --font-mono:         var(--font-numeric);
@@ -277,6 +277,7 @@ textarea {
 
 .page-content.home-page {
   max-width: none;
+  padding: var(--space-8) var(--space-10);
 }
 
 /* ========================================
@@ -285,18 +286,19 @@ textarea {
 
 .home-layout {
   display: flex;
-  gap: var(--space-6);
+  gap: var(--space-8);
   align-items: flex-start;
 }
 
 .home-peek {
-  flex: 1;
+  flex: 0 1 420px;
   min-width: 0;
 }
 
 .home-form-col {
-  flex: 1 1 480px;
-  max-width: 50%;
+  flex: 1 1 520px;
+  max-width: 55%;
+  min-width: 0;
 }
 
 @media (max-width: 900px) {
@@ -309,14 +311,27 @@ textarea {
     width: 100%;
     order: -1;
   }
+  .home-peek {
+    flex: none;
+    max-width: none;
+    width: 100%;
+  }
+}
+
+/* Card section wrapper */
+.card-section {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-6);
 }
 
 /* Metric cards — 2×2 grid */
 .metrics-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: var(--space-3);
-  margin-bottom: var(--space-6);
+  gap: var(--space-4);
+  margin-bottom: var(--space-8);
 }
 
 .metric-card {

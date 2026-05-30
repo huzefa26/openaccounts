@@ -69,7 +69,9 @@ export class App {
             </div>
 
             <div class="home-form-col">
-              ${TransactionFormHtml(accounts)}
+              <section class="card-section">
+                ${TransactionFormHtml(accounts)}
+              </section>
             </div>
           </div>
         </div>`,
