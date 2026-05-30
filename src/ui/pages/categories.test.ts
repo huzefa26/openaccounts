@@ -20,9 +20,8 @@ function makeAccount(overrides: Partial<Account> = {}): Account {
 }
 
 describe('CategoriesPageHtml', () => {
-  it('renders header', () => {
+  it('renders new category button', () => {
     const html = CategoriesPageHtml([]);
-    expect(html).toContain('Categories');
     expect(html).toContain('+ New Category');
   });
 

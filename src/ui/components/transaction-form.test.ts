@@ -27,10 +27,9 @@ const accounts: Account[] = [
 describe('TransactionFormHtml', () => {
   it('renders form structure', () => {
     const html = TransactionFormHtml(accounts);
-    expect(html).toContain('New Transaction');
     expect(html).toContain('Date');
     expect(html).toContain('Description');
-    expect(html).toContain('Track');
+    expect(html).toContain('Save Entry');
   });
 
   it('renders From and To sections', () => {

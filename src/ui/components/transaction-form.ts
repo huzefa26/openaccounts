@@ -12,36 +12,40 @@ export interface TransactionFormData {
 
 export function TransactionFormHtml(accounts: Account[]): string {
   return `
-    <article class="card" id="tx-form">
-      <header>
-        <h2>New Transaction</h2>
-      </header>
-
-      <label data-field>
-        Date
-        <input type="date" id="tx-date" value="${todayISO()}" />
-      </label>
-
-      <label data-field>
-        Description
-        <input type="text" id="tx-desc" placeholder="e.g. Grocery shopping" />
-        <span data-hint>e.g. Grocery shopping, Rent payment</span>
-      </label>
-
-      <div class="section-card from">
-        <h3>From</h3>
-        <div id="from-container">
-          ${splitRowHtml(accounts, 'from', 0)}
+    <div id="tx-form">
+      <div class="home-form-row hstack gap-3">
+        <div class="form-group" style="flex: 0 0 160px;">
+          <label class="form-label" for="tx-date">Date</label>
+          <input type="date" id="tx-date" class="input" value="${todayISO()}" />
         </div>
-        <button type="button" class="add-link" id="add-from">+ Add from category</button>
+        <div class="form-group" style="flex: 1;">
+          <label class="form-label" for="tx-desc">Description</label>
+          <input type="text" id="tx-desc" class="input" placeholder="e.g. Grocery shopping" />
+        </div>
       </div>
 
-      <div class="section-card to">
-        <h3>To</h3>
-        <div id="to-container">
-          ${splitRowHtml(accounts, 'to', 1)}
+      <div class="home-form-row hstack gap-3">
+        <div class="form-group" style="flex: 1;">
+          <label class="form-label">From</label>
+          <div id="from-container">
+            ${splitRowHtml(accounts, 'from', 0)}
+          </div>
+          <button type="button" class="add-link" id="add-from">+ Add from category</button>
         </div>
-        <button type="button" class="add-link" id="add-to">+ Add to category</button>
+        <div class="form-group" style="flex: 1;">
+          <label class="form-label">To</label>
+          <div id="to-container">
+            ${splitRowHtml(accounts, 'to', 1)}
+          </div>
+          <button type="button" class="add-link" id="add-to">+ Add to category</button>
+        </div>
+      </div>
+
+      <div class="home-form-row">
+        <div class="form-group">
+          <label class="form-label" for="tx-notes">Notes (optional)</label>
+          <input type="text" id="tx-notes" class="input" placeholder="Add a note..." />
+        </div>
       </div>
 
       <p id="balance-indicator" class="balance-zero">
@@ -49,22 +53,23 @@ export function TransactionFormHtml(accounts: Account[]): string {
         <span id="balance-status"></span>
       </p>
 
-      <footer class="hstack justify-end">
-        <button id="save-tx">Track</button>
-      </footer>
-    </article>`;
+      <div class="hstack justify-end gap-2">
+        <button type="button" id="reset-tx" class="outline">Reset</button>
+        <button id="save-tx">Save Entry</button>
+      </div>
+    </div>`;
 }
 
 function splitRowHtml(accounts: Account[], side: 'from' | 'to', idx: number): string {
   return `
-    <div class="split-row ${side}-row" data-idx="${idx}">
-      <select data-split-account required>
+    <div class="split-row ${side}-row hstack gap-2" data-idx="${idx}">
+      <select data-split-account class="input" required style="flex:1;">
         <option value="">— Select category —</option>
         ${accounts.map((a) => `<option value="${a.id}">${a.name}</option>`).join('')}
       </select>
       <span class="split-amount-wrap">
         <span class="currency-prefix">$</span>
-        <input type="number" data-split-amount placeholder="0.00" step="0.01" min="0" required />
+        <input type="number" data-split-amount class="input" placeholder="0.00" step="0.01" min="0" required style="border:none;width:90px;text-align:right;" />
       </span>
       <button type="button" class="remove-split" disabled title="Remove entry">&minus;</button>
     </div>`;
@@ -170,6 +175,22 @@ export function mountTransactionForm(
       else toCount--;
       updateBalance();
       updateRemoveButtons();
+      return;
+    }
+
+    if (target.matches('#reset-tx')) {
+      form.querySelectorAll<HTMLInputElement>('#tx-desc, #tx-notes').forEach((el) => el.value = '');
+      const dateInput = form.querySelector<HTMLInputElement>('#tx-date');
+      if (dateInput) dateInput.value = todayISO();
+      form.querySelectorAll<HTMLInputElement>('[data-split-amount]').forEach((el) => el.value = '');
+      form.querySelectorAll<HTMLSelectElement>('[data-split-account]').forEach((el) => el.selectedIndex = 0);
+      // Reset balance indicator
+      const text = form.querySelector('#balance-text')!;
+      const status = form.querySelector('#balance-status')!;
+      const indicator = form.querySelector('#balance-indicator')!;
+      indicator.className = 'balance-zero';
+      text.textContent = '$0.00 From = $0.00 To';
+      status.textContent = '';
       return;
     }
 

@@ -21,10 +21,7 @@ export function CategoriesPageHtml(accounts: Account[]): string {
 
   return `
     <div class="page-content">
-      <header class="hstack justify-between items-center" style="margin-bottom: var(--space-3);">
-        <h2>Categories</h2>
-        <button id="new-category-btn" class="button">+ New Category</button>
-      </header>
+      <button id="new-category-btn" class="button" style="margin-bottom: var(--space-3);">+ New Category</button>
 
       ${TYPE_ORDER
         .filter((t) => groups[t])

@@ -1,8 +1,8 @@
-import type { Transaction, Account } from '../../types/storage';
+import type { Transaction } from '../../types/storage';
 
 export function RecentEntriesHtml(
   transactions: Transaction[],
-  accountMap: Map<number, Account>,
+  _accountMap: Map<number, unknown>,
 ): string {
   if (transactions.length === 0) return '<p class="text-light">No entries yet.</p>';
 
@@ -11,20 +11,15 @@ export function RecentEntriesHtml(
 
   const rows = recent
     .map((tx) => {
-      return tx.splits
-        .map((split, j) => {
-          const acct = accountMap.get(split.accountId);
-          const acctName = acct?.name ?? `[id:${split.accountId}]`;
-          return `
-            <tr>
-              <td>${j === 0 ? esc(tx.date) : ''}</td>
-              <td>${j === 0 ? esc(tx.description) : ''}</td>
-              <td>${esc(acctName)}</td>
-              <td>${split.type === 'debit' ? split.amount.toFixed(2) : '<span class="amount-empty">&mdash;</span>'}</td>
-              <td>${split.type === 'credit' ? split.amount.toFixed(2) : '<span class="amount-empty">&mdash;</span>'}</td>
-            </tr>`;
-        })
-        .join('');
+      const total = tx.splits
+        .filter((s) => s.type === 'debit')
+        .reduce((s, split) => s + split.amount, 0);
+      return `
+        <tr>
+          <td>${esc(tx.date)}</td>
+          <td>${esc(tx.description)}</td>
+          <td class="numeric">${total.toFixed(2)}</td>
+        </tr>`;
     })
     .join('');
 
@@ -35,9 +30,7 @@ export function RecentEntriesHtml(
           <tr>
             <th scope="col">Date</th>
             <th scope="col">Description</th>
-            <th scope="col">Account</th>
-            <th scope="col">Debit</th>
-            <th scope="col">Credit</th>
+            <th scope="col" class="amount">Amount</th>
           </tr>
         </thead>
         <tbody>

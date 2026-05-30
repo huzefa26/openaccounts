@@ -41,11 +41,11 @@ describe('RecentEntriesHtml', () => {
     );
     const html = RecentEntriesHtml(txs, accountMap);
     const matches = html.match(/<tr>/g);
-    // 5 most recent transactions × 2 splits each + 1 header row
-    expect(matches).toHaveLength(11);
+    // 5 most recent transactions (1 row each) + 1 header row
+    expect(matches).toHaveLength(6);
   });
 
-  it('shows debit and credit amounts in separate columns', () => {
+  it('shows total transaction amount', () => {
     const tx = makeTx({
       splits: [
         { accountId: 1, amount: 200, type: 'debit', currency: 'USD' },
@@ -54,8 +54,12 @@ describe('RecentEntriesHtml', () => {
     });
     const html = RecentEntriesHtml([tx], accountMap);
     expect(html).toContain('200.00');
-    expect(html).toContain('Cash');
-    expect(html).toContain('Income');
+  });
+
+  it('does not show account names (peek view)', () => {
+    const html = RecentEntriesHtml([makeTx()], accountMap);
+    expect(html).not.toContain('Cash');
+    expect(html).not.toContain('Income');
   });
 
   it('escapes HTML in description', () => {

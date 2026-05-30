@@ -267,46 +267,103 @@ textarea {
   padding: var(--space-4);
 }
 
-.stats-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: var(--space-3);
-  margin: var(--space-4) 0;
-}
-
-@media (max-width: 480px) {
-  .stats-grid {
-    grid-template-columns: 1fr;
-  }
+.page-content.home-page {
+  max-width: none;
 }
 
 /* ========================================
-   Section cards (From / To)
+   Home page — two-column layout
    ======================================== */
 
-.section-card {
-  background: var(--accent-light);
-  border-radius: var(--radius-md);
-  padding: var(--space-3);
-  margin: var(--space-3) 0;
+.home-layout {
+  display: flex;
+  gap: var(--space-6);
+  align-items: flex-start;
+}
+
+.home-peek {
+  flex: 1;
+  min-width: 0;
+}
+
+.home-form-col {
+  flex: 1 1 480px;
+  max-width: 50%;
+}
+
+@media (max-width: 900px) {
+  .home-layout {
+    flex-direction: column;
+  }
+  .home-form-col {
+    flex: none;
+    max-width: none;
+    width: 100%;
+    order: -1;
+  }
+}
+
+/* Metric cards — 2×2 grid */
+.metrics-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-3);
+  margin-bottom: var(--space-6);
+}
+
+.metric-card {
   border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-5);
 }
 
-.section-card.from {
-  border-left: 3px solid var(--income);
-}
-
-.section-card.to {
-  border-left: 3px solid var(--neutral);
-}
-
-.section-card h3 {
+.metric-card .metric-label {
   font-size: var(--text-xs);
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
+  font-weight: var(--weight-medium);
   color: var(--text-secondary);
-  margin: 0 0 var(--space-2);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.metric-card .metric-value {
+  font-family: var(--font-numeric);
+  font-size: var(--text-2xl);
+  font-weight: var(--weight-bold);
+  color: var(--text-primary);
+  line-height: 1.2;
+  margin-top: var(--space-1);
+}
+
+.metric-card .metric-value.income {
+  color: var(--income);
+}
+
+.metric-card .metric-value.expense {
+  color: var(--expense);
+}
+
+/* Form label component */
+.form-label {
+  display: block;
+  font-family: var(--font-ui);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+  color: var(--text-secondary);
+  margin-bottom: var(--space-1);
+  letter-spacing: 0.01em;
+}
+
+/* Home page inline form */
+#tx-form {
+  /* inline on --bg, no card wrapper */
+}
+
+.home-form-row + .home-form-row {
+  margin-top: var(--space-4);
+}
+
+.home-form-row.hstack {
+  align-items: flex-start;
 }
 
 /* ========================================
@@ -638,32 +695,7 @@ textarea {
   margin-top: var(--space-1);
 }
 
-/* ========================================
-   Metric cards
-   ======================================== */
 
-.metric-card {
-  border: 1px solid var(--border);
-  border-radius: var(--radius-md);
-  padding: var(--space-4);
-}
-
-.metric-card h3 {
-  font-size: var(--text-xs);
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: var(--text-secondary);
-  margin: 0 0 var(--space-1);
-}
-
-.metric-card .metric-value {
-  font-family: var(--font-numeric);
-  font-size: var(--text-2xl);
-  font-weight: 600;
-  color: var(--text-primary);
-  margin: 0;
-}
 
 /* ========================================
    Pagination controls
