@@ -355,11 +355,6 @@ textarea {
   letter-spacing: 0.01em;
 }
 
-/* Home page inline form */
-#tx-form {
-  /* inline on --bg, no card wrapper */
-}
-
 .home-form-row + .home-form-row {
   margin-top: var(--space-4);
 }
@@ -371,12 +366,6 @@ textarea {
 /* ========================================
    Split rows (transaction form)
    ======================================== */
-
-.split-row {
-  display: flex;
-  gap: var(--space-2);
-  align-items: center;
-}
 
 .split-row + .split-row {
   margin-top: var(--space-2);
@@ -570,20 +559,18 @@ textarea {
 }
 
 .category-row {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
   padding: var(--space-2) var(--space-3);
   border-radius: var(--radius-md);
+  border-top: 1px solid var(--border);
   transition: background var(--transition-base);
+}
+
+.category-row:first-child {
+  border-top: none;
 }
 
 .category-row:hover {
   background: var(--accent-light);
-}
-
-.category-row + .category-row {
-  border-top: 1px solid var(--border);
 }
 
 .category-name {
@@ -645,13 +632,13 @@ textarea {
 }
 
 .danger-btn {
-  background: var(--expense) !important;
-  color: var(--text-on-accent) !important;
-  border: none !important;
+  background: var(--expense);
+  color: var(--text-on-accent);
+  border: none;
 }
 
 .danger-btn:hover {
-  background: #A93223 !important;
+  background: #A93223;
 }
 
 /* Account type badges */
@@ -721,7 +708,6 @@ textarea {
   color: var(--text-tertiary);
   margin-top: var(--space-1);
 }
-
 
 
 /* ========================================

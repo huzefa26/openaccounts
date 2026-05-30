@@ -34,7 +34,7 @@ export function CategoriesPageHtml(accounts: Account[]): string {
                   .map((a) => {
                     const balance = (a.openingBalance ?? 0).toFixed(2);
                     return `
-                      <div class="category-row" data-category-id="${a.id}">
+                      <div class="category-row hstack gap-2 items-center" data-category-id="${a.id}">
                         <span class="category-name">
                           ${esc(a.name)}
                           <span class="account-type-badge type-${esc(a.type)}">${TYPE_LABELS[a.type] || a.type}</span>
