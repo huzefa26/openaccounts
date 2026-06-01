@@ -46,6 +46,7 @@ export default function CategoryForm({ category, onClose }) {
   async function handleSubmit(e) {
     e.preventDefault();
     if (!validate()) return;
+    if (category?.is_system) return;
 
     setSaving(true);
     try {

@@ -28,6 +28,7 @@ export async function update(id, data) {
   const db = await dbPromise;
   const existing = await db.get('categories', id);
   if (!existing) throw new Error('Category not found');
+  if (existing.is_system) throw new Error('System categories cannot be edited');
   const updated = { ...existing, ...data, id, updated_at: new Date().toISOString() };
   await db.put('categories', updated);
   return updated;
@@ -35,5 +36,7 @@ export async function update(id, data) {
 
 export async function del(id) {
   const db = await dbPromise;
+  const existing = await db.get('categories', id);
+  if (existing?.is_system) throw new Error('System categories cannot be deleted');
   await db.delete('categories', id);
 }
