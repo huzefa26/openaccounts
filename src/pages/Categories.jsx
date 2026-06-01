@@ -21,6 +21,7 @@ export default function Categories() {
   const [showForm, setShowForm] = useState(false);
   const [deletingId, setDeletingId] = useState(null);
   const [deleteError, setDeleteError] = useState(null);
+  const [collapsedTypes, setCollapsedTypes] = useState(new Set());
 
   useEffect(() => {
     fetchAll();
@@ -84,6 +85,15 @@ export default function Categories() {
     setDeleteError(null);
   }
 
+  function toggleType(type) {
+    setCollapsedTypes((prev) => {
+      const next = new Set(prev);
+      if (next.has(type)) next.delete(type);
+      else next.add(type);
+      return next;
+    });
+  }
+
   function handleCloseForm() {
     setShowForm(false);
     setEditingCategory(null);
@@ -123,11 +133,32 @@ export default function Categories() {
               return (
                 <>
                   <tr key={`header-${type}`} className="bg-bg border-b border-border">
-                    <td colSpan={5} className="py-2 px-4 text-xs font-semibold text-text-secondary uppercase tracking-wider">
-                      {TYPE_LABELS[type]}
+                    <td colSpan={5} className="py-2 px-4">
+                      <button
+                        type="button"
+                        onClick={() => toggleType(type)}
+                        className="flex items-center gap-2 w-full text-left text-xs font-semibold text-text-secondary uppercase tracking-wider"
+                      >
+                        <svg
+                          width="12"
+                          height="12"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2.5"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          className={`transition-transform duration-base ${
+                            collapsedTypes.has(type) ? '-rotate-90' : 'rotate-0'
+                          }`}
+                        >
+                          <polyline points="6 9 12 15 18 9" />
+                        </svg>
+                        {TYPE_LABELS[type]}
+                      </button>
                     </td>
                   </tr>
-                  {typeCategories
+                  {!collapsedTypes.has(type) && typeCategories
                     .sort((a, b) => a.name.localeCompare(b.name))
                     .map((cat) => renderCategory(cat))}
                 </>

@@ -107,7 +107,7 @@ export default function CategoryForm({ category, onClose }) {
           value={parentId}
           onChange={(e) => setParentId(e.target.value)}
           options={sameTypeCategories.map((c) => ({ value: c.id, label: c.name }))}
-          placeholder="None (root)"
+          placeholder="None"
         />
 
         <div className="flex flex-col gap-1.5">
