@@ -1,9 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import Input from '../ui/Input';
 import Select from '../ui/Select';
 import Button from '../ui/Button';
 import useCategoryStore from '../../store/categoryStore';
 import useCurrencyStore from '../../store/currencyStore';
+import useTransactionStore from '../../store/transactionStore';
 
 function today() {
   return new Date().toISOString().slice(0, 10);
@@ -15,17 +16,52 @@ function createRow() {
 
 export default function TransactionForm() {
   const { categories, fetchAll: fetchCategories } = useCategoryStore();
-  const { currencies, defaultCurrency, fetchAll: fetchCurrencies } = useCurrencyStore();
+  const { currencies, fetchAll: fetchCurrencies } = useCurrencyStore();
+  const { createTransaction } = useTransactionStore();
 
   const [date, setDate] = useState(today());
   const [description, setDescription] = useState('');
   const [notes, setNotes] = useState('');
   const [fromRows, setFromRows] = useState([createRow()]);
   const [toRows, setToRows] = useState([createRow()]);
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState(null);
 
   useEffect(() => { fetchCategories(); fetchCurrencies(); }, []);
 
   const nonSystemCategories = categories.filter((c) => !c.is_system);
+
+  const balances = useMemo(() => {
+    const currencyMap = {};
+
+    for (const row of fromRows) {
+      if (!row.currency || !row.amount) continue;
+      if (!currencyMap[row.currency]) currencyMap[row.currency] = { credits: 0, debits: 0 };
+      currencyMap[row.currency].credits += Number(row.amount);
+    }
+
+    for (const row of toRows) {
+      if (!row.currency || !row.amount) continue;
+      if (!currencyMap[row.currency]) currencyMap[row.currency] = { credits: 0, debits: 0 };
+      currencyMap[row.currency].debits += Number(row.amount);
+    }
+
+    return currencyMap;
+  }, [fromRows, toRows]);
+
+  const allCurrenciesBalanced = useMemo(() => {
+    const codes = Object.keys(balances);
+    if (codes.length === 0) return false;
+    return codes.every((code) => balances[code].credits === balances[code].debits);
+  }, [balances]);
+
+  const allRowsFilled =
+    description.trim().length > 0 &&
+    [...fromRows, ...toRows].every(
+      (r) => r.categoryId && r.currency && Number(r.amount) > 0,
+    );
+
+  const canSave = allCurrenciesBalanced && allRowsFilled;
 
   function updateRow(side, id, field, value) {
     const updater = (rows) =>
@@ -44,6 +80,57 @@ export default function TransactionForm() {
       setFromRows((prev) => (prev.length > 1 ? prev.filter((r) => r.id !== id) : prev));
     } else {
       setToRows((prev) => (prev.length > 1 ? prev.filter((r) => r.id !== id) : prev));
+    }
+  }
+
+  function resetForm() {
+    setDescription('');
+    setNotes('');
+    setFromRows([createRow()]);
+    setToRows([createRow()]);
+    setSaveError(null);
+  }
+
+  async function handleSubmit(e) {
+    e.preventDefault();
+    if (!canSave || saving) return;
+
+    setSaving(true);
+    setSaveError(null);
+
+    try {
+      const transaction = {
+        date,
+        description: description.trim(),
+        notes: notes.trim(),
+        is_opening_balance: false,
+        opening_balance_category_id: null,
+      };
+
+      const fromLines = fromRows
+        .filter((r) => r.categoryId && Number(r.amount) > 0)
+        .map((r) => ({
+          category_id: r.categoryId,
+          entry_type: 'credit',
+          currency: r.currency,
+          amount: Number(r.amount),
+        }));
+
+      const toLines = toRows
+        .filter((r) => r.categoryId && Number(r.amount) > 0)
+        .map((r) => ({
+          category_id: r.categoryId,
+          entry_type: 'debit',
+          currency: r.currency,
+          amount: Number(r.amount),
+        }));
+
+      await createTransaction({ transaction, lines: [...fromLines, ...toLines] });
+      resetForm();
+    } catch (err) {
+      setSaveError(err.message);
+    } finally {
+      setSaving(false);
     }
   }
 
@@ -113,8 +200,39 @@ export default function TransactionForm() {
     );
   }
 
+  function renderBalanceIndicator() {
+    const codes = Object.keys(balances);
+    if (codes.length === 0) return null;
+
+    return (
+      <div className="flex flex-wrap gap-4 px-1">
+        {codes.map((code) => {
+          const { credits, debits } = balances[code];
+          const diff = debits - credits;
+          const balanced = diff === 0;
+          return (
+            <div
+              key={code}
+              className={`flex items-center gap-1.5 text-sm font-numeric ${
+                balanced ? 'text-income' : 'text-expense'
+              }`}
+            >
+              <span className="font-medium text-text-secondary">{code}:</span>
+              <span>{diff.toFixed(2)}</span>
+              {balanced && (
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="20 6 9 17 4 12" />
+                </svg>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    );
+  }
+
   return (
-    <form className="flex flex-col gap-5">
+    <form onSubmit={handleSubmit} className="flex flex-col gap-5">
       <Input
         label="Date"
         name="date"
@@ -142,6 +260,10 @@ export default function TransactionForm() {
         {renderRows('to')}
       </section>
 
+      <div className="flex items-center justify-between">
+        {renderBalanceIndicator()}
+      </div>
+
       <div className="flex flex-col gap-1.5">
         <label htmlFor="notes" className="text-sm font-medium text-text-primary">Notes</label>
         <textarea
@@ -153,8 +275,22 @@ export default function TransactionForm() {
         />
       </div>
 
-      <Button disabled title="Complete description and add entries to enable save">
-        Save
+      {saveError && (
+        <p className="text-xs text-error">{saveError}</p>
+      )}
+
+      <Button
+        type="submit"
+        disabled={!canSave || saving}
+        title={
+          !description.trim()
+            ? 'Enter a description'
+            : !allCurrenciesBalanced
+              ? 'Balance credits and debits for each currency'
+              : 'Save transaction'
+        }
+      >
+        {saving ? 'Saving...' : 'Save'}
       </Button>
     </form>
   );
