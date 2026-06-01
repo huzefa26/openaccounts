@@ -18,7 +18,7 @@ export default function CategoryRow({ category, children, onEdit, depth = 0 }) {
           depth === 0 ? 'bg-surface' : ''
         }`}
       >
-        <td className={`py-3 pr-4 text-sm font-numeric whitespace-nowrap pl-[${16 + indent}px]`}>
+        <td className="py-3 pr-4 text-sm font-numeric whitespace-nowrap" style={{ paddingLeft: `${16 + indent}px` }}>
           <span className={depth > 0 ? 'text-text-secondary' : 'font-medium text-text-primary'}>
             {category.name}
           </span>
