@@ -6,9 +6,9 @@ import useBalance from './useBalance';
 function currentMonthBounds() {
   const now = new Date();
   const year = now.getFullYear();
-  const month = String(now.getMonth() + 1).padStart(2, '0');
-  const firstDay = `${year}-${month}-01`;
-  const lastDay = new Date(year, now.getMonth() + 1, 0).toISOString().slice(0, 10);
+  const month = now.getMonth() + 1;
+  const firstDay = `${year}-${String(month).padStart(2, '0')}-01`;
+  const lastDay = new Date(new Date(year, month, 1) - 1).toISOString().slice(0, 10);
   return { firstDay, lastDay };
 }
 
