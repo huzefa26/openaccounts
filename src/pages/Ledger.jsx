@@ -137,6 +137,7 @@ export default function Ledger() {
         totalPages={totalPages}
         onPageChange={setPage}
         totalItems={filtered.length}
+        pageSize={PAGE_SIZE}
       />
 
       {editingTx && (
