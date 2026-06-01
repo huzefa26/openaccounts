@@ -1,0 +1,26 @@
+export const baseCoa = [
+  { name: 'Cash', type: 'asset', parent: null },
+  { name: 'Bank Account', type: 'asset', parent: null },
+  { name: 'Wallets', type: 'asset', parent: null },
+  { name: 'Accounts Receivable', type: 'asset', parent: null },
+  { name: 'Fixed Assets', type: 'asset', parent: null },
+  { name: 'Investments', type: 'asset', parent: null },
+  { name: 'Credit Card', type: 'liability', parent: null },
+  { name: 'Loans', type: 'liability', parent: null },
+  { name: 'Accounts Payable', type: 'liability', parent: null },
+  { name: 'Income', type: 'income', parent: null },
+  { name: 'Interest Income', type: 'income', parent: null },
+  { name: 'General Expenses', type: 'expense', parent: null },
+  { name: 'Food & Dining', type: 'expense', parent: null },
+  { name: 'Groceries', type: 'expense', parent: 'Food & Dining' },
+  { name: 'Dining Out', type: 'expense', parent: 'Food & Dining' },
+  { name: 'Transportation', type: 'expense', parent: null },
+  { name: 'Utilities', type: 'expense', parent: null },
+  { name: 'Rent', type: 'expense', parent: 'Utilities' },
+  { name: 'Entertainment', type: 'expense', parent: null },
+  { name: 'Apparel & Cosmetics', type: 'expense', parent: null },
+  { name: 'Healthcare', type: 'expense', parent: null },
+  { name: 'Opening Balance Equity', type: 'equity', parent: null, is_system: true },
+];
+
+export const CATEGORY_TYPES = ['asset', 'liability', 'income', 'expense', 'equity'];
