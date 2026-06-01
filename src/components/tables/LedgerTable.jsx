@@ -18,6 +18,7 @@ export default function LedgerTable({
   totalPages,
   onPageChange,
   totalItems,
+  pageSize,
 }) {
   const [expandedNotes, setExpandedNotes] = useState(new Set());
   const [deletingId, setDeletingId] = useState(null);
@@ -48,8 +49,8 @@ export default function LedgerTable({
     );
   }
 
-  const startItem = (page - 1) * 20 + 1;
-  const endItem = Math.min(page * 20, totalItems);
+  const startItem = (page - 1) * pageSize + 1;
+  const endItem = Math.min(page * pageSize, totalItems);
 
   return (
     <div className="border border-border rounded-lg overflow-hidden">
