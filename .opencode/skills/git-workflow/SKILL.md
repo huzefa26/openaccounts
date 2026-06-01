@@ -1,5 +1,5 @@
 ---
-name: git-worklfow
+name: git-workflow
 description: Structures git workflow practices. Use when making any code change.
 ---
 
