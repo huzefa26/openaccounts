@@ -1,10 +1,67 @@
 import { useState, useEffect, useMemo } from 'react';
 import useCurrencyStore from '../store/currencyStore';
 import useSyncStore from '../store/syncStore';
+import useAuthStore from '../store/authStore';
 import { exportAllData } from '../utils/export';
 import { baseCurrencies } from '../constants/baseCurrencies';
 import Modal from '../components/ui/Modal';
 import Button from '../components/ui/Button';
+
+function AccountSection() {
+  const { user, isSignedIn, loading, error, signIn, signOut, clearError } = useAuthStore();
+
+  const clientIdMissing = !import.meta.env.VITE_GOOGLE_CLIENT_ID;
+
+  if (clientIdMissing) {
+    return (
+      <div className="border border-border rounded-lg p-5">
+        <h2 className="text-xs font-semibold text-text-secondary uppercase tracking-wider mb-3">Account</h2>
+        <p className="text-sm text-text-tertiary">
+          Google Sign-In not configured. Set <code className="text-xs bg-accent-light px-1 py-0.5 rounded">VITE_GOOGLE_CLIENT_ID</code> in your environment.
+        </p>
+      </div>
+    );
+  }
+
+  if (isSignedIn && user) {
+    return (
+      <div className="border border-border rounded-lg p-5">
+        <h2 className="text-xs font-semibold text-text-secondary uppercase tracking-wider mb-3">Account</h2>
+        <div className="flex items-center gap-4">
+          {user.picture && (
+            <img
+              src={user.picture}
+              alt={`${user.name}'s profile`}
+              className="w-9 h-9 rounded-full border border-border"
+            />
+          )}
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-medium text-text-primary truncate">{user.name}</p>
+            <p className="text-sm text-text-secondary truncate">{user.email}</p>
+          </div>
+          <Button variant="ghost" onClick={signOut} disabled={loading}>
+            {loading ? 'Signing out...' : 'Sign out'}
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="border border-border rounded-lg p-5">
+      <h2 className="text-xs font-semibold text-text-secondary uppercase tracking-wider mb-3">Account</h2>
+      <p className="text-sm text-text-secondary mb-3">
+        Sign in with Google to enable cloud sync and backup.
+      </p>
+      {error && (
+        <p className="text-sm text-expense mb-2">{error}</p>
+      )}
+      <Button onClick={() => { clearError(); signIn(); }} disabled={loading}>
+        {loading ? 'Signing in...' : 'Sign in with Google'}
+      </Button>
+    </div>
+  );
+}
 
 function HomeCurrencySection({ currencies, defaultCurrency, onSetDefault }) {
   const [showModal, setShowModal] = useState(false);
@@ -206,6 +263,7 @@ function CurrenciesSection({ currencies, onAdd, onRemove, defaultCurrency }) {
 export default function Profile() {
   const { currencies, defaultCurrency, loading, fetchAll, addCurrency, removeCurrency, setDefaultCurrency } = useCurrencyStore();
   const syncStore = useSyncStore();
+  const authStore = useAuthStore();
   const [exporting, setExporting] = useState(false);
 
   useEffect(() => {
@@ -227,6 +285,8 @@ export default function Profile() {
       <h1 className="text-xl font-semibold text-text-primary mb-6">Profile</h1>
 
       <div className="flex flex-col gap-6">
+        <AccountSection />
+
         <HomeCurrencySection
           currencies={currencies}
           defaultCurrency={defaultCurrency}
@@ -256,12 +316,20 @@ export default function Profile() {
               <p className="text-sm text-text-secondary mb-2">
                 Sync your data with Google Drive for backup across devices.
               </p>
-              <Button variant="ghost" disabled>
-                Sign in to enable sync
-              </Button>
-              <div className="flex items-center gap-2 mt-2">
+              {authStore.isSignedIn ? (
+                <Button variant="ghost" disabled>
+                  Sync with Google Drive
+                </Button>
+              ) : (
+                <Button variant="ghost" disabled>
+                  Sign in to enable sync
+                </Button>
+              )}
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-2">
                 <span className="text-xs text-text-tertiary">Status:</span>
-                <span className="text-xs text-text-disabled">{syncStore.status === 'idle' ? 'Not synced' : syncStore.status}</span>
+                <span className="text-xs text-text-disabled">
+                  {authStore.isSignedIn ? 'Signed in' : 'Not signed in'}
+                </span>
                 <span className="text-xs text-text-tertiary">Last synced:</span>
                 <span className="text-xs text-text-disabled">
                   {syncStore.lastSynced ? new Date(syncStore.lastSynced).toLocaleString() : '—'}
