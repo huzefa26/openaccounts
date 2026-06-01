@@ -268,6 +268,7 @@ export default function Profile() {
 
   useEffect(() => {
     fetchAll();
+    syncStore.loadLastSynced();
   }, []);
 
   async function handleExport() {
@@ -317,8 +318,11 @@ export default function Profile() {
                 Sync your data with Google Drive for backup across devices.
               </p>
               {authStore.isSignedIn ? (
-                <Button variant="ghost" disabled>
-                  Sync with Google Drive
+                <Button
+                  onClick={() => syncStore.runSync()}
+                  disabled={syncStore.status === 'syncing'}
+                >
+                  {syncStore.status === 'syncing' ? 'Syncing...' : 'Sync with Google Drive'}
                 </Button>
               ) : (
                 <Button variant="ghost" disabled>
@@ -327,14 +331,25 @@ export default function Profile() {
               )}
               <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-2">
                 <span className="text-xs text-text-tertiary">Status:</span>
-                <span className="text-xs text-text-disabled">
-                  {authStore.isSignedIn ? 'Signed in' : 'Not signed in'}
+                <span className="text-xs text-text-secondary">
+                  {syncStore.status === 'syncing'
+                    ? 'Syncing...'
+                    : syncStore.status === 'error'
+                      ? 'Sync failed'
+                      : authStore.isSignedIn
+                        ? 'Ready'
+                        : 'Not signed in'}
                 </span>
                 <span className="text-xs text-text-tertiary">Last synced:</span>
-                <span className="text-xs text-text-disabled">
-                  {syncStore.lastSynced ? new Date(syncStore.lastSynced).toLocaleString() : '—'}
+                <span className="text-xs text-text-secondary">
+                  {syncStore.lastSynced
+                    ? new Date(syncStore.lastSynced).toLocaleString()
+                    : authStore.isSignedIn ? 'Never' : '—'}
                 </span>
               </div>
+              {syncStore.error && (
+                <p className="text-xs text-expense mt-1">{syncStore.error}</p>
+              )}
             </div>
           </div>
         </div>
