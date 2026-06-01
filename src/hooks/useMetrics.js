@@ -42,11 +42,10 @@ export default function useMetrics() {
     const result = {};
 
     for (const line of lines) {
-      if (obTxIds.has(line.transaction_id)) continue;
-      if (line.entry_type !== 'debit') continue;
-      if (!expenseCategoryIds.has(line.category_id)) continue;
       if (!txIdsInMonth.has(line.transaction_id)) continue;
-
+      if (!expenseCategoryIds.has(line.category_id)) continue;
+      if (line.entry_type !== 'debit') continue;
+      if (obTxIds.has(line.transaction_id)) continue;
       result[line.currency] = (result[line.currency] || 0) + line.amount;
     }
 
