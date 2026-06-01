@@ -4,6 +4,8 @@ import useCategoryStore from '../store/categoryStore';
 import useCurrencyStore from '../store/currencyStore';
 import LedgerTable from '../components/tables/LedgerTable';
 import FilterBar from '../components/layout/FilterBar';
+import Modal from '../components/ui/Modal';
+import TransactionForm from '../components/forms/TransactionForm';
 
 const PAGE_SIZE = 20;
 
@@ -106,7 +108,10 @@ export default function Ledger() {
     deleteTransaction(id);
   }
 
-  /* handleEditSuccess will be added in a subsequent commit */
+  function handleEditSuccess() {
+    setEditingTx(null);
+    setEditingLines(null);
+  }
 
   return (
     <div className="p-6 max-w-6xl mx-auto">
@@ -134,7 +139,15 @@ export default function Ledger() {
         totalItems={filtered.length}
       />
 
-      {/* Edit modal will be added in a subsequent commit */}
+      {editingTx && (
+        <Modal open onClose={() => setEditingTx(null)} title="Edit Transaction">
+          <TransactionForm
+            initialTransaction={editingTx}
+            initialLines={editingLines}
+            onSuccess={handleEditSuccess}
+          />
+        </Modal>
+      )}
     </div>
   );
 }
