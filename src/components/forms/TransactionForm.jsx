@@ -14,16 +14,43 @@ function createRow() {
   return { id: crypto.randomUUID(), categoryId: '', currency: 'AED', amount: '' };
 }
 
-export default function TransactionForm() {
+export default function TransactionForm({ initialTransaction, initialLines, onSuccess }) {
   const { categories, fetchAll: fetchCategories } = useCategoryStore();
   const { currencies, fetchAll: fetchCurrencies } = useCurrencyStore();
-  const { createTransaction } = useTransactionStore();
+  const { createTransaction, updateTransaction } = useTransactionStore();
 
-  const [date, setDate] = useState(today());
-  const [description, setDescription] = useState('');
-  const [notes, setNotes] = useState('');
-  const [fromRows, setFromRows] = useState([createRow()]);
-  const [toRows, setToRows] = useState([createRow()]);
+  const isEdit = Boolean(initialTransaction);
+
+  function initRows() {
+    if (initialLines) {
+      const creditRows = initialLines
+        .filter((l) => l.entry_type === 'credit')
+        .map((l) => ({ id: crypto.randomUUID(), categoryId: l.category_id, currency: l.currency, amount: String(l.amount) }));
+      const debitRows = initialLines
+        .filter((l) => l.entry_type === 'debit')
+        .map((l) => ({ id: crypto.randomUUID(), categoryId: l.category_id, currency: l.currency, amount: String(l.amount) }));
+      return {
+        date: initialTransaction.date,
+        description: initialTransaction.description,
+        notes: initialTransaction.notes || '',
+        fromRows: creditRows.length > 0 ? creditRows : [createRow()],
+        toRows: debitRows.length > 0 ? debitRows : [createRow()],
+      };
+    }
+    return {
+      date: today(),
+      description: '',
+      notes: '',
+      fromRows: [createRow()],
+      toRows: [createRow()],
+    };
+  }
+
+  const [date, setDate] = useState(initRows().date);
+  const [description, setDescription] = useState(initRows().description);
+  const [notes, setNotes] = useState(initRows().notes);
+  const [fromRows, setFromRows] = useState(initRows().fromRows);
+  const [toRows, setToRows] = useState(initRows().toRows);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState(null);
 
@@ -125,7 +152,12 @@ export default function TransactionForm() {
           amount: Number(r.amount),
         }));
 
-      await createTransaction({ transaction, lines: [...fromLines, ...toLines] });
+      if (isEdit) {
+        await updateTransaction(initialTransaction.id, { transaction, lines: [...fromLines, ...toLines] });
+      } else {
+        await createTransaction({ transaction, lines: [...fromLines, ...toLines] });
+      }
+      onSuccess?.();
       resetForm();
     } catch (err) {
       setSaveError(err.message);
