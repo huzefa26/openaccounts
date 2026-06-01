@@ -1,15 +1,14 @@
-const TYPE_LABELS = {
-  asset: 'Assets',
-  liability: 'Liabilities',
-  income: 'Income',
-  expense: 'Expenses',
-  equity: 'Equity',
-};
-
-const TYPE_ORDER = ['asset', 'liability', 'income', 'expense', 'equity'];
+import useBalance from '../../hooks/useBalance';
 
 export default function CategoryRow({ category, children, onEdit, onDelete, depth = 0 }) {
+  const balance = useBalance(category.id);
   const indent = depth * 24;
+
+  const balanceDisplay = Object.keys(balance).length > 0
+    ? Object.entries(balance)
+        .map(([currency, amount]) => `${amount.toLocaleString()} ${currency}`)
+        .join(', ')
+    : '—';
 
   return (
     <>
@@ -27,7 +26,7 @@ export default function CategoryRow({ category, children, onEdit, onDelete, dept
           {category.opening_balance ? category.opening_balance.toLocaleString() : '—'}
         </td>
         <td className="py-3 px-4 text-sm font-numeric text-right text-text-tertiary whitespace-nowrap">
-          —
+          {balanceDisplay}
         </td>
         <td className="py-3 px-2 text-right whitespace-nowrap">
           {!category.is_system && (
