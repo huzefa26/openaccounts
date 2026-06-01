@@ -31,6 +31,10 @@ export default function useMetrics() {
         .map((t) => t.id),
     );
 
+    const obTxIds = new Set(
+      transactions.filter((t) => t.is_opening_balance).map((t) => t.id),
+    );
+
     const expenseCategoryIds = new Set(
       categories.filter((c) => c.type === 'expense').map((c) => c.id),
     );
@@ -38,6 +42,7 @@ export default function useMetrics() {
     const result = {};
 
     for (const line of lines) {
+      if (obTxIds.has(line.transaction_id)) continue;
       if (line.entry_type !== 'debit') continue;
       if (!expenseCategoryIds.has(line.category_id)) continue;
       if (!txIdsInMonth.has(line.transaction_id)) continue;

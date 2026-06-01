@@ -14,7 +14,7 @@ function getDescendantIds(id, categories) {
 
 export default function useBalance(categoryId) {
   const { categories } = useCategoryStore();
-  const { lines } = useTransactionStore();
+  const { lines, transactions } = useTransactionStore();
   const { defaultCurrency } = useCurrencyStore();
 
   return useMemo(() => {
@@ -26,9 +26,14 @@ export default function useBalance(categoryId) {
     const openingBalance = category.opening_balance || 0;
     const homeCurrency = defaultCurrency?.code || 'AED';
 
+    const obTxIds = new Set(
+      transactions.filter((t) => t.is_opening_balance).map((t) => t.id),
+    );
+
     const balanceMap = {};
 
     for (const line of lines) {
+      if (obTxIds.has(line.transaction_id)) continue;
       if (!allIds.includes(line.category_id)) continue;
 
       if (!balanceMap[line.currency]) {
@@ -49,5 +54,5 @@ export default function useBalance(categoryId) {
     }
 
     return balanceMap;
-  }, [categoryId, categories, lines, defaultCurrency]);
+  }, [categoryId, categories, lines, transactions, defaultCurrency]);
 }
