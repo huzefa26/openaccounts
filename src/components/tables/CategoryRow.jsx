@@ -8,7 +8,7 @@ const TYPE_LABELS = {
 
 const TYPE_ORDER = ['asset', 'liability', 'income', 'expense', 'equity'];
 
-export default function CategoryRow({ category, children, onEdit, depth = 0 }) {
+export default function CategoryRow({ category, children, onEdit, onDelete, depth = 0 }) {
   const indent = depth * 24;
 
   return (
