@@ -111,15 +111,15 @@ export default function Home() {
     <div className="p-6 max-w-4xl mx-auto">
       <h1 className="text-xl font-semibold text-text-primary mb-6">Home</h1>
 
-      <div className="flex flex-wrap gap-4 mb-8">
+      <TransactionForm />
+
+      <div className="flex flex-wrap gap-4 mt-8 mb-8">
         <MetricCard title="Total Expenses This Month" amounts={expenses} color="text-expense" />
         <MetricCard title="Receivables" amounts={receivables} />
         <MetricCard title="Payables" amounts={payables} />
       </div>
 
       <RecentTransactions transactions={transactions} lines={lines} />
-
-      <TransactionForm />
     </div>
   );
 }

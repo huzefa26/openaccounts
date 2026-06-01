@@ -314,14 +314,6 @@ Active route is highlighted. No nested routing.
 
 **Layout (top to bottom):**
 
-**Metrics strip** — 3 cards:
-- *Total Expenses This Month:* Sum of all debit amounts on `expense`-type transaction lines for the current calendar month, grouped by currency. Show per-currency if multiple.
-- *Total Receivables:* Net running balance of the `Accounts Receivable` category and all its descendants. Per-currency.
-- *Total Payables:* Net running balance of the `Accounts Payable` category and all its descendants. Per-currency.
-
-**Recent transactions** — last 5 transactions ordered by `date` desc, then `created_at` desc.  
-Each row shows: Date · Description · Per-currency total amounts (debit side).
-
 **Transaction Entry Form:**
 
 | Field | Type | Rules |
@@ -336,6 +328,14 @@ Each row shows: Date · Description · Per-currency total amounts (debit side).
 Below From and To sections: a real-time per-currency balance indicator showing difference (e.g. "AED: 0.00 ✓" or "AED: −50.00").
 
 On Save: write transaction + all lines to IndexedDB. Reset form (keep today's date, clear all other fields, reset to 1 row each side).
+
+**Metrics strip** — 3 cards:
+- *Total Expenses This Month:* Sum of all debit amounts on `expense`-type transaction lines for the current calendar month, grouped by currency. Show per-currency if multiple.
+- *Total Receivables:* Net running balance of the `Accounts Receivable` category and all its descendants. Per-currency.
+- *Total Payables:* Net running balance of the `Accounts Payable` category and all its descendants. Per-currency.
+
+**Recent transactions** — last 5 transactions ordered by `date` desc, then `created_at` desc.
+Each row shows: Date · Description · Per-currency total amounts (debit side).
 
 ---
 
