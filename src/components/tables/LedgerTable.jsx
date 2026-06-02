@@ -1,4 +1,6 @@
 import { useState, useMemo } from 'react';
+import Badge from '../ui/Badge';
+import { getAccountColor } from '../../constants/accountColors';
 
 function formatAmount(amount) {
   return Number(amount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -31,6 +33,14 @@ export default function LedgerTable({
     }
     return map;
   }, [lines]);
+
+  const categoriesMap = useMemo(() => {
+    const map = {};
+    for (const c of categories) {
+      map[c.id] = c.type;
+    }
+    return map;
+  }, [categories]);
 
   function toggleNote(id) {
     setExpandedNotes((prev) => {
@@ -93,15 +103,19 @@ export default function LedgerTable({
                 <td className="py-2.5 px-3 text-sm font-numeric text-right">
                   {credits.length > 0 ? (
                     <div className="flex flex-col gap-0.5">
-                      {credits.map((l) => (
-                        <div key={l.id} className="flex items-center justify-end gap-2">
-                          <span className="text-xs text-text-secondary truncate max-w-[100px]" title={catName(categories, l.category_id)}>
-                            {catName(categories, l.category_id)}
-                          </span>
-                          <span className="text-xs text-text-tertiary w-8 text-right">{l.currency}</span>
-                          <span className="text-income w-24 text-right">{formatAmount(l.amount)}</span>
-                        </div>
-                      ))}
+                      {credits.map((l) => {
+                        const type = categoriesMap[l.category_id];
+                        return (
+                          <div key={l.id} className="flex items-center justify-end gap-2">
+                            <span className={`inline-flex items-center gap-1 text-xs truncate max-w-[100px] ${getAccountColor(type)}`} title={catName(categories, l.category_id)}>
+                              <Badge type={type} />
+                              <span className="truncate">{catName(categories, l.category_id)}</span>
+                            </span>
+                            <span className="text-xs text-text-tertiary w-8 text-right">{l.currency}</span>
+                            <span className="text-income w-24 text-right">{formatAmount(l.amount)}</span>
+                          </div>
+                        );
+                      })}
                     </div>
                   ) : (
                     <span className="text-text-disabled">—</span>
@@ -110,15 +124,19 @@ export default function LedgerTable({
                 <td className="py-2.5 px-3 text-sm font-numeric text-right">
                   {debits.length > 0 ? (
                     <div className="flex flex-col gap-0.5">
-                      {debits.map((l) => (
-                        <div key={l.id} className="flex items-center justify-end gap-2">
-                          <span className="text-xs text-text-secondary truncate max-w-[100px]" title={catName(categories, l.category_id)}>
-                            {catName(categories, l.category_id)}
-                          </span>
-                          <span className="text-xs text-text-tertiary w-8 text-right">{l.currency}</span>
-                          <span className="text-expense w-24 text-right">{formatAmount(l.amount)}</span>
-                        </div>
-                      ))}
+                      {debits.map((l) => {
+                        const type = categoriesMap[l.category_id];
+                        return (
+                          <div key={l.id} className="flex items-center justify-end gap-2">
+                            <span className={`inline-flex items-center gap-1 text-xs truncate max-w-[100px] ${getAccountColor(type)}`} title={catName(categories, l.category_id)}>
+                              <Badge type={type} />
+                              <span className="truncate">{catName(categories, l.category_id)}</span>
+                            </span>
+                            <span className="text-xs text-text-tertiary w-8 text-right">{l.currency}</span>
+                            <span className="text-expense w-24 text-right">{formatAmount(l.amount)}</span>
+                          </div>
+                        );
+                      })}
                     </div>
                   ) : (
                     <span className="text-text-disabled">—</span>
