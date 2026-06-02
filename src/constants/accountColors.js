@@ -1,21 +1,26 @@
 const COLORS = {
   asset: {
+    slug: 'teal',
     light: 'bg-teal-500/10 text-teal-700',
     dark: 'dark:text-teal-400',
   },
   liability: {
+    slug: 'rose',
     light: 'bg-rose-500/10 text-rose-700',
     dark: 'dark:text-rose-400',
   },
   income: {
+    slug: 'sky',
     light: 'bg-sky-500/10 text-sky-700',
     dark: 'dark:text-sky-400',
   },
   expense: {
+    slug: 'amber',
     light: 'bg-amber-500/10 text-amber-700',
     dark: 'dark:text-amber-400',
   },
   equity: {
+    slug: 'violet',
     light: 'bg-violet-500/10 text-violet-700',
     dark: 'dark:text-violet-400',
   },
@@ -33,4 +38,16 @@ export function getAccountColor(type) {
   const c = COLORS[type];
   if (!c) return '';
   return `${c.light} ${c.dark}`.trim();
+}
+
+export function getDotColor(type) {
+  const c = COLORS[type];
+  if (!c) return '';
+  return `bg-${c.slug}-500`;
+}
+
+export function getHeaderColor(type) {
+  const c = COLORS[type];
+  if (!c) return '';
+  return `${c.light} ${c.dark} dark:bg-${c.slug}-500/20`.trim();
 }
