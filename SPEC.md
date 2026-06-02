@@ -1,6 +1,6 @@
 # OpenAccounts — Project Specification
 > **Version:** 2.0 | **Status:** Active
-> Core build (Phases 1–9) is complete. Feature sessions A–F are pending.
+> Core build (Phases 1–9) and Session A are complete. Sessions B–F are pending.
 > Read this file in full before every agent session. Update the Build Status section at the end of every session.
 
 ---
@@ -662,29 +662,11 @@ On first launch (`settings.onboarding_complete` is absent or false):
 | 7 | Profile page, currency management, export data | ✅ Complete |
 | 8 | Google Sign-In via GIS token client, token storage, two-check refresh logic, auth state | ✅ Complete |
 | 9 | Google Drive sync engine (pull → merge → push), sync UI on Profile | ✅ Complete |
+| **A** | **Visual foundation** — account colours, dark mode, Badge component, type-colored categories/ledger/dropdowns, balance indicator animation | ✅ Complete |
 
 ---
 
 ## 14. Pending Feature Sessions
-
-### Session A — Visual foundation
-**Scope:** `src/constants/accountColors.js`, `tailwind.config.js`, `index.css`, category badge components, Ledger row, category dropdown, Categories page group headers, TransactionForm balance indicator.
-
-**Work:**
-- Define `accountColors.js` with the colour token map from §8.3
-- Register `font-numeric` in `tailwind.config.js` (§8.1); apply `font-numeric` class to all amount, balance, and date elements app-wide
-- Apply account type colour classes to category badges, dropdown options, ledger row tints, and category group headers
-- Add zero-balance success state to the per-currency balance indicator: when difference = 0, animate to green (pulse or checkmark transition)
-
-**Do not touch:** Any store, DB, or routing logic.
-
-**Acceptance criteria:**
-- All numeric values render in `Geist Mono` / `Roboto Mono`
-- Colour badges are consistent across Categories page, Ledger, and transaction form dropdowns
-- Balance indicator animates green when per-currency difference hits zero
-- Light and dark mode both look correct for all colour additions
-
----
 
 ### Session B — Transaction form enhancements
 **Scope:** `src/utils/math.js` (new), `src/components/forms/TransactionForm.jsx`, `src/store/categoryStore.js`, `src/components/forms/CategoryForm.jsx`.
