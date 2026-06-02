@@ -110,7 +110,7 @@ export default function FilterBar({ filters, categories, currencies, onFilterCha
               label="Category"
               options={categories
                 .filter((c) => !c.is_system)
-                .map((c) => ({ value: c.id, label: c.name }))}
+                .map((c) => ({ value: c.id, label: c.name, type: c.type }))}
               selected={filters.categoryIds}
               onChange={(values) => handle('categoryIds', values)}
               placeholder="All categories"

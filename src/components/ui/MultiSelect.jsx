@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
+import Badge from './Badge';
 
 export default function MultiSelect({ label, options, selected = [], onChange, placeholder = 'All' }) {
   const [open, setOpen] = useState(false);
@@ -71,7 +72,10 @@ export default function MultiSelect({ label, options, selected = [], onChange, p
                     onChange={() => toggle(opt.value)}
                     className="accent-accent w-4 h-4 rounded border-border"
                   />
-                  <span className="truncate">{opt.label}</span>
+                  <span className="flex items-center gap-1.5 truncate">
+                    {opt.type && <Badge type={opt.type} />}
+                    <span className="truncate">{opt.label}</span>
+                  </span>
                 </label>
               );
             })
