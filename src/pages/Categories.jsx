@@ -3,6 +3,8 @@ import useCategoryStore from '../store/categoryStore';
 import useTransactionStore from '../store/transactionStore';
 import CategoryRow from '../components/tables/CategoryRow';
 import CategoryForm from '../components/forms/CategoryForm';
+import Badge from '../components/ui/Badge';
+import { getAccountColor } from '../constants/accountColors';
 
 const TYPE_LABELS = {
   asset: 'Assets',
@@ -132,13 +134,14 @@ export default function Categories() {
               if (!typeCategories || typeCategories.length === 0) return null;
               return (
                 <>
-                  <tr key={`header-${type}`} className="bg-bg border-b border-border">
+                  <tr key={`header-${type}`} className={`border-b border-border ${getAccountColor(type)}`}>
                     <td colSpan={5} className="py-2 px-4">
                       <button
                         type="button"
                         onClick={() => toggleType(type)}
-                        className="flex items-center gap-2 w-full text-left text-xs font-semibold text-text-secondary uppercase tracking-wider"
+                        className="flex items-center gap-2 w-full text-left text-xs font-semibold uppercase tracking-wider"
                       >
+                        <Badge type={type} className="w-2.5 h-2.5" />
                         <svg
                           width="12"
                           height="12"

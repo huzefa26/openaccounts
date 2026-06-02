@@ -1,4 +1,6 @@
 import useBalance from '../../hooks/useBalance';
+import Badge from '../ui/Badge';
+import { getAccountColor } from '../../constants/accountColors';
 
 export default function CategoryRow({ category, children, onEdit, onDelete, depth = 0 }) {
   const balance = useBalance(category.id);
@@ -17,8 +19,9 @@ export default function CategoryRow({ category, children, onEdit, onDelete, dept
           depth === 0 ? 'bg-surface' : ''
         }`}
       >
-        <td className="py-3 pr-4 text-sm font-numeric whitespace-nowrap" style={{ paddingLeft: `${16 + indent}px` }}>
-          <span className={depth > 0 ? 'text-text-secondary' : 'font-medium text-text-primary'}>
+        <td className="py-3 pr-4 text-sm whitespace-nowrap" style={{ paddingLeft: `${16 + indent}px` }}>
+          <span className={`inline-flex items-center gap-2 ${depth > 0 ? 'text-text-secondary' : 'font-medium text-text-primary'}`}>
+            <Badge type={category.type} />
             {category.name}
           </span>
         </td>
