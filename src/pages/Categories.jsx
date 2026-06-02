@@ -4,7 +4,7 @@ import useTransactionStore from '../store/transactionStore';
 import CategoryRow from '../components/tables/CategoryRow';
 import CategoryForm from '../components/forms/CategoryForm';
 import Badge from '../components/ui/Badge';
-import { getAccountColor } from '../constants/accountColors';
+import { getHeaderColor } from '../constants/accountColors';
 
 const TYPE_LABELS = {
   asset: 'Assets',
@@ -134,7 +134,7 @@ export default function Categories() {
               if (!typeCategories || typeCategories.length === 0) return null;
               return (
                 <>
-                  <tr key={`header-${type}`} className={`border-b border-border ${getAccountColor(type)}`}>
+                  <tr key={`header-${type}`} className={`border-b border-border ${getHeaderColor(type)}`}>
                     <td colSpan={5} className="py-2 px-4">
                       <button
                         type="button"
