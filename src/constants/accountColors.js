@@ -8,8 +8,8 @@ const COLORS = {
     dark: 'dark:text-rose-400',
   },
   income: {
-    light: 'bg-emerald-500/10 text-emerald-700',
-    dark: 'dark:text-emerald-400',
+    light: 'bg-sky-500/10 text-sky-700',
+    dark: 'dark:text-sky-400',
   },
   expense: {
     light: 'bg-amber-500/10 text-amber-700',
