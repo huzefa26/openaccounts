@@ -1,51 +1,52 @@
 /** @type {import('tailwindcss').Config} */
 export default {
+  darkMode: 'class',
   content: ['./index.html', './src/**/*.{js,jsx}'],
   theme: {
     extend: {
       colors: {
-        bg: '#FAFAF8',
-        surface: '#FFFFFF',
+        bg: 'var(--bg)',
+        surface: 'var(--surface)',
         border: {
-          DEFAULT: '#E8E8E4',
-          strong: '#D0CFC9',
+          DEFAULT: 'var(--border)',
+          strong: 'var(--border-strong)',
         },
         income: {
-          DEFAULT: '#1A7A4A',
-          bg: '#EDF7F2',
+          DEFAULT: 'var(--income)',
+          bg: 'var(--income-bg)',
         },
         expense: {
-          DEFAULT: '#C0392B',
-          bg: '#FDF2F1',
+          DEFAULT: 'var(--expense)',
+          bg: 'var(--expense-bg)',
         },
         neutral: {
-          DEFAULT: '#2C5282',
-          bg: '#EBF2FF',
+          DEFAULT: 'var(--neutral)',
+          bg: 'var(--neutral-bg)',
         },
         accent: {
-          DEFAULT: '#1E3A5F',
-          hover: '#162C4A',
-          light: '#E8EEF5',
+          DEFAULT: 'var(--accent)',
+          hover: 'var(--accent-hover)',
+          light: 'var(--accent-light)',
         },
-        link: '#2563EB',
+        link: 'var(--link)',
         error: {
-          DEFAULT: '#C0392B',
-          bg: '#FDF2F1',
+          DEFAULT: 'var(--error)',
+          bg: 'var(--error-bg)',
         },
         warning: {
-          DEFAULT: '#D97706',
-          bg: '#FEF9EC',
+          DEFAULT: 'var(--warning)',
+          bg: 'var(--warning-bg)',
         },
         success: {
-          DEFAULT: '#1A7A4A',
-          bg: '#EDF7F2',
+          DEFAULT: 'var(--success)',
+          bg: 'var(--success-bg)',
         },
         text: {
-          primary: '#1A1A1A',
-          secondary: '#6B6B65',
-          tertiary: '#9B9B94',
-          disabled: '#BEBEB8',
-          'on-accent': '#FFFFFF',
+          primary: 'var(--text-primary)',
+          secondary: 'var(--text-secondary)',
+          tertiary: 'var(--text-tertiary)',
+          disabled: 'var(--text-disabled)',
+          'on-accent': 'var(--text-on-accent)',
         },
       },
       fontFamily: {
@@ -80,7 +81,7 @@ export default {
         full: '9999px',
       },
       boxShadow: {
-        pop: '0 4px 16px -4px rgba(0,0,0,0.12), 0 0 0 1px #E8E8E4',
+        pop: '0 4px 16px -4px rgba(0,0,0,0.12), 0 0 0 1px var(--border)',
       },
       transitionDuration: {
         base: '120ms',

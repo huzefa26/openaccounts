@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { NavLink } from 'react-router-dom';
 
 function BottomNavItem({ path, label, children }) {
@@ -19,6 +20,15 @@ function BottomNavItem({ path, label, children }) {
 }
 
 export default function BottomNav() {
+  const [dark, setDark] = useState(() => document.documentElement.classList.contains('dark'));
+
+  function toggleTheme() {
+    const next = !dark;
+    setDark(next);
+    document.documentElement.classList.toggle('dark', next);
+    localStorage.setItem('oa_theme', next ? 'dark' : 'light');
+  }
+
   return (
     <nav className="flex md:hidden items-center justify-around px-2 h-16 border-t border-border bg-surface fixed bottom-0 inset-x-0 z-40">
       <BottomNavItem path="/" label="Home">
@@ -49,6 +59,30 @@ export default function BottomNav() {
           <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" />
         </svg>
       </BottomNavItem>
+      <button
+        type="button"
+        onClick={toggleTheme}
+        className="flex flex-col items-center gap-1 py-2 px-2 text-xs font-medium transition-colors duration-base text-text-tertiary hover:text-text-primary flex-shrink-0"
+        aria-label={dark ? 'Switch to light mode' : 'Switch to dark mode'}
+      >
+        {dark ? (
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="12" cy="12" r="5" />
+            <line x1="12" y1="1" x2="12" y2="3" />
+            <line x1="12" y1="21" x2="12" y2="23" />
+            <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" />
+            <line x1="18.36" y1="18.36" x2="19.78" y2="19.78" />
+            <line x1="1" y1="12" x2="3" y2="12" />
+            <line x1="21" y1="12" x2="23" y2="12" />
+            <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" />
+            <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
+          </svg>
+        ) : (
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z" />
+          </svg>
+        )}
+      </button>
     </nav>
   );
 }

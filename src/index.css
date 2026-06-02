@@ -66,3 +66,31 @@
     font-family: var(--font-ui);
   }
 }
+
+.dark {
+  --bg: #1A1A1A;
+  --surface: #242424;
+  --border: #333333;
+  --border-strong: #444444;
+  --text-primary: #E8E8E4;
+  --text-secondary: #9B9B94;
+  --text-tertiary: #6B6B65;
+  --text-disabled: #4A4A44;
+  --text-on-accent: #FFFFFF;
+  --income: #3CA66B;
+  --income-bg: #132A1A;
+  --expense: #E05D5D;
+  --expense-bg: #2D1515;
+  --neutral: #5B8BB8;
+  --neutral-bg: #15202D;
+  --accent: #5D8BB8;
+  --accent-hover: #6D9BC8;
+  --accent-light: #1E2A3A;
+  --link: #5B9DD9;
+  --error: #E05D5D;
+  --error-bg: #2D1515;
+  --warning: #D99F2B;
+  --warning-bg: #2D2210;
+  --success: #3CA66B;
+  --success-bg: #132A1A;
+}
