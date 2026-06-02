@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import Input from '../ui/Input';
 import Select from '../ui/Select';
 import CategorySelect from '../ui/CategorySelect';
@@ -54,6 +54,8 @@ export default function TransactionForm({ initialTransaction, initialLines, onSu
   const [toRows, setToRows] = useState(initRows().toRows);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState(null);
+  const [balanceAnimKey, setBalanceAnimKey] = useState(0);
+  const wasBalanced = useRef(false);
 
   useEffect(() => { fetchCategories(); fetchCurrencies(); }, []);
 
@@ -82,6 +84,13 @@ export default function TransactionForm({ initialTransaction, initialLines, onSu
     if (codes.length === 0) return false;
     return codes.every((code) => balances[code].credits === balances[code].debits);
   }, [balances]);
+
+  useEffect(() => {
+    if (allCurrenciesBalanced && !wasBalanced.current) {
+      setBalanceAnimKey((k) => k + 1);
+    }
+    wasBalanced.current = allCurrenciesBalanced;
+  }, [allCurrenciesBalanced]);
 
   const allRowsFilled =
     description.trim().length > 0 &&
@@ -244,9 +253,9 @@ export default function TransactionForm({ initialTransaction, initialLines, onSu
           const balanced = diff === 0;
           return (
             <div
-              key={code}
+              key={`${code}-${balanced ? balanceAnimKey : ''}`}
               className={`flex items-center gap-1.5 text-sm font-numeric ${
-                balanced ? 'text-income' : 'text-expense'
+                balanced ? 'text-income animate-balance-confirmed' : 'text-expense'
               }`}
             >
               <span className="font-medium text-text-secondary">{code}:</span>

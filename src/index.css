@@ -94,3 +94,13 @@
   --success: #3CA66B;
   --success-bg: #132A1A;
 }
+
+@keyframes balance-confirmed {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.07); }
+  100% { transform: scale(1); }
+}
+
+.animate-balance-confirmed {
+  animation: balance-confirmed 0.35s ease-out;
+}
