@@ -22,7 +22,7 @@ const useSyncStore = create((set) => ({
   runSync: async () => {
     set({ status: 'syncing', error: null });
     try {
-      const { lastSynced } = await runSyncEngine();
+      const { lastSynced } = await runSyncEngine(get().lastSynced);
 
       useTransactionStore.getState().invalidateCache();
       useCategoryStore.getState().invalidateCache();

@@ -14,7 +14,7 @@ export async function exportAllData() {
   ]);
 
   const payload = {
-    version: 1,
+    version: 2,
     exported_at: new Date().toISOString(),
     categories,
     transactions,

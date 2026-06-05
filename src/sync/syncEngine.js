@@ -18,7 +18,7 @@ function getKey(record, keyPath) {
   return record[keyPath];
 }
 
-function mergeStore(localRecords, remoteRecords, keyPath) {
+function mergeStore(localRecords, remoteRecords, keyPath, lastSyncedAt) {
   const map = new Map();
 
   for (const r of localRecords) {
@@ -29,7 +29,12 @@ function mergeStore(localRecords, remoteRecords, keyPath) {
     for (const r of remoteRecords) {
       const key = getKey(r, keyPath);
       const local = map.get(key);
-      if (!local || r.updated_at > local.updated_at) {
+
+      if (local) {
+        if (r.updated_at > local.updated_at) {
+          map.set(key, r);
+        }
+      } else if (lastSyncedAt && r.updated_at > lastSyncedAt) {
         map.set(key, r);
       }
     }
@@ -64,7 +69,7 @@ async function applyMerged(merged) {
 
 function buildSnapshot(data) {
   return {
-    version: 1,
+    version: 2,
     exported_at: new Date().toISOString(),
     categories: data.categories,
     transactions: data.transactions,
@@ -74,7 +79,7 @@ function buildSnapshot(data) {
   };
 }
 
-export async function sync() {
+export async function sync(lastSyncedAt) {
   const remoteFile = await findFile();
 
   const remoteData = remoteFile ? await readFile(remoteFile.id) : null;
@@ -82,7 +87,7 @@ export async function sync() {
 
   const merged = {};
   for (const cfg of STORE_CONFIG) {
-    merged[cfg.name] = mergeStore(localData[cfg.name], remoteData?.[cfg.name], cfg.keyPath);
+    merged[cfg.name] = mergeStore(localData[cfg.name], remoteData?.[cfg.name], cfg.keyPath, lastSyncedAt);
   }
 
   const snapshot = buildSnapshot(merged);
