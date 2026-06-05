@@ -1,5 +1,6 @@
 import { NavLink } from 'react-router-dom';
 import useAuthStore from '../../store/authStore';
+import AvatarWithSync from './AvatarWithSync';
 
 function BottomNavItem({ path, label, children }) {
   return (
@@ -48,7 +49,7 @@ export default function BottomNav() {
       </BottomNavItem>
       <BottomNavItem path="/profile" label="Profile">
         {user?.picture ? (
-          <img src={user.picture} alt="" className="w-6 h-6 rounded-full border border-border" />
+          <AvatarWithSync size="sm" />
         ) : (
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <circle cx="12" cy="8" r="4" />
