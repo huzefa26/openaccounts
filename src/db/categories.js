@@ -15,8 +15,20 @@ export async function getByType(type) {
   return db.getAllFromIndex('categories', 'type', type);
 }
 
+async function assertUniqueName(db, name, excludeId) {
+  const all = await db.getAll('categories');
+  const normalized = name.trim().toLowerCase();
+  const conflict = all.find(
+    (c) => c.name.trim().toLowerCase() === normalized && c.id !== excludeId,
+  );
+  if (conflict) {
+    throw new Error('A category with this name already exists.');
+  }
+}
+
 export async function create(data) {
   const db = await dbPromise;
+  await assertUniqueName(db, data.name);
   const id = crypto.randomUUID();
   const now = new Date().toISOString();
   const record = { ...data, id, created_at: now, updated_at: now };
@@ -29,6 +41,9 @@ export async function update(id, data) {
   const existing = await db.get('categories', id);
   if (!existing) throw new Error('Category not found');
   if (existing.is_system) throw new Error('System categories cannot be edited');
+  if (data.name && data.name.trim().toLowerCase() !== existing.name.trim().toLowerCase()) {
+    await assertUniqueName(db, data.name, id);
+  }
   const updated = { ...existing, ...data, id, updated_at: new Date().toISOString() };
   await db.put('categories', updated);
   return updated;
