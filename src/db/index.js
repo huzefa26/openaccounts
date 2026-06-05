@@ -42,10 +42,13 @@ export async function resetDB() {
     req.onerror = () => reject(req.error);
     req.onblocked = () => resolve();
   });
-  dbPromise = createDB();
+  dbPromise = null;
 }
 
 export async function initDB() {
+  if (!dbPromise) {
+    dbPromise = createDB();
+  }
   return dbPromise;
 }
 
