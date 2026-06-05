@@ -20,7 +20,7 @@ export async function seedFirstRun(db) {
 
   const catStore = tx.objectStore('categories');
   for (const cat of baseCoa) {
-    await catStore.add({
+    await catStore.put({
       id: baseIds[cat.name],
       name: cat.name,
       type: cat.type,

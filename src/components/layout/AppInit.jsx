@@ -21,6 +21,7 @@ async function populateFromSnapshot(db, data) {
 
     const tx = db.transaction(storeName, 'readwrite');
     const store = tx.objectStore(storeName);
+    await store.clear();
     for (const record of records) {
       await store.put(record);
     }
