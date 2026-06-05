@@ -23,19 +23,21 @@ export default function Navbar() {
   const { user } = useAuthStore();
 
   return (
-    <nav className="hidden md:flex items-center px-6 h-14 border-b border-border bg-surface fixed top-0 inset-x-0 z-40">
-      <span className="text-base font-semibold text-text-secondary shrink-0">OpenAccounts</span>
-      <div className="flex-1 flex items-center justify-center gap-1">
-        <NavIcon path="/">Home</NavIcon>
-        <NavIcon path="/ledger">Ledger</NavIcon>
-        <NavIcon path="/analytics">Analytics</NavIcon>
-        <NavIcon path="/categories">Categories</NavIcon>
+    <nav className="hidden md:flex h-14 border-b border-border bg-surface fixed top-0 inset-x-0 z-40">
+      <div className="flex items-center px-6 max-w-4xl mx-auto w-full h-full">
+        <span className="text-base font-semibold text-text-secondary shrink-0">OpenAccounts</span>
+        <div className="flex-1 flex items-center justify-center gap-1">
+          <NavIcon path="/">Home</NavIcon>
+          <NavIcon path="/ledger">Ledger</NavIcon>
+          <NavIcon path="/analytics">Analytics</NavIcon>
+          <NavIcon path="/categories">Categories</NavIcon>
+        </div>
+        {user?.picture && (
+          <NavLink to="/profile" aria-label="Profile" className="shrink-0">
+            <AvatarWithSync size="md" />
+          </NavLink>
+        )}
       </div>
-      {user?.picture && (
-        <NavLink to="/profile" aria-label="Profile" className="shrink-0">
-          <AvatarWithSync size="md" />
-        </NavLink>
-      )}
     </nav>
   );
 }
