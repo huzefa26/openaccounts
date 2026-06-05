@@ -5,7 +5,7 @@ import useTransactionStore from './transactionStore';
 import useCategoryStore from './categoryStore';
 import useCurrencyStore from './currencyStore';
 
-const useSyncStore = create((set) => ({
+const useSyncStore = create((set, get) => ({
   status: 'idle',
   lastSynced: null,
   error: null,
