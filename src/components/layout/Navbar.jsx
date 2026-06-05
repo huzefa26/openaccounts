@@ -1,4 +1,5 @@
 import { NavLink } from 'react-router-dom';
+import useAuthStore from '../../store/authStore';
 
 function NavIcon({ path, children }) {
   return (
@@ -18,14 +19,26 @@ function NavIcon({ path, children }) {
 }
 
 export default function Navbar() {
+  const { user } = useAuthStore();
+
   return (
-    <nav className="hidden md:flex items-center gap-1 px-6 h-14 border-b border-border bg-surface fixed top-0 inset-x-0 z-40">
-      <span className="text-base font-bold text-text-primary mr-6">OpenAccounts</span>
-      <NavIcon path="/">Home</NavIcon>
-      <NavIcon path="/ledger">Ledger</NavIcon>
-      <NavIcon path="/analytics">Analytics</NavIcon>
-      <NavIcon path="/categories">Categories</NavIcon>
-      <NavIcon path="/profile">Profile</NavIcon>
+    <nav className="hidden md:flex items-center px-6 h-14 border-b border-border bg-surface fixed top-0 inset-x-0 z-40">
+      <span className="text-base font-semibold text-text-secondary shrink-0">OpenAccounts</span>
+      <div className="flex-1 flex items-center justify-center gap-1">
+        <NavIcon path="/">Home</NavIcon>
+        <NavIcon path="/ledger">Ledger</NavIcon>
+        <NavIcon path="/analytics">Analytics</NavIcon>
+        <NavIcon path="/categories">Categories</NavIcon>
+      </div>
+      {user?.picture && (
+        <NavLink to="/profile" className="shrink-0">
+          <img
+            src={user.picture}
+            alt="Profile"
+            className="w-8 h-8 rounded-full border border-border hover:ring-2 hover:ring-accent/30 transition-all duration-base"
+          />
+        </NavLink>
+      )}
     </nav>
   );
 }
