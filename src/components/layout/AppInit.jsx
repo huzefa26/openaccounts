@@ -1,0 +1,111 @@
+import { useEffect, useState, useCallback } from 'react';
+import { initDB } from '../../db/index';
+import { seedFirstRun } from '../../db/seed';
+import { findFile, readFile, createFile } from '../../sync/googleDrive';
+
+const STEPS = {
+  checking: 'Checking Google Drive...',
+  downloading: 'Downloading your data...',
+  settingUp: 'Setting up your account...',
+  connecting: 'Connecting to Google Drive...',
+  done: 'All set!',
+  error: 'Couldn\'t reach Google Drive. Please check your connection and try again.',
+};
+
+const STORE_NAMES = ['categories', 'transactions', 'transaction_lines', 'currencies', 'settings'];
+
+async function populateFromSnapshot(db, data) {
+  for (const storeName of STORE_NAMES) {
+    const records = data[storeName];
+    if (!records || records.length === 0) continue;
+
+    const tx = db.transaction(storeName, 'readwrite');
+    const store = tx.objectStore(storeName);
+    for (const record of records) {
+      await store.put(record);
+    }
+    await tx.done;
+  }
+}
+
+async function buildPushSnapshot(db) {
+  const snapshot = { version: 2, exported_at: new Date().toISOString() };
+
+  for (const storeName of STORE_NAMES) {
+    const tx = db.transaction(storeName, 'readonly');
+    const store = tx.objectStore(storeName);
+    snapshot[storeName] = await store.getAll();
+  }
+
+  await createFile(snapshot);
+}
+
+export default function AppInit({ onComplete }) {
+  const [status, setStatus] = useState(STEPS.checking);
+  const [error, setError] = useState(null);
+
+  const run = useCallback(async () => {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 8000);
+
+    try {
+      const db = await initDB();
+
+      setStatus(STEPS.checking);
+      const file = await findFile({ signal: controller.signal });
+
+      if (file) {
+        setStatus(STEPS.downloading);
+        const data = await readFile(file.id, { signal: controller.signal });
+        await populateFromSnapshot(db, data);
+      } else {
+        setStatus(STEPS.settingUp);
+        await seedFirstRun(db);
+
+        setStatus(STEPS.connecting);
+        await buildPushSnapshot(db);
+      }
+
+      clearTimeout(timeout);
+      setStatus(STEPS.done);
+      setTimeout(() => onComplete(), 300);
+    } catch (err) {
+      clearTimeout(timeout);
+      if (err.name === 'AbortError') {
+        setError(STEPS.error);
+      } else {
+        setError(err.message);
+      }
+    }
+  }, [onComplete]);
+
+  useEffect(() => {
+    run();
+  }, [run]);
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-bg flex items-center justify-center p-6">
+        <div className="text-center max-w-sm">
+          <p className="text-sm text-expense mb-4">{error}</p>
+          <button
+            type="button"
+            onClick={() => window.location.reload()}
+            className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium bg-accent text-text-on-accent rounded-md hover:bg-accent-hover transition-colors duration-base"
+          >
+            Try Again
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-bg flex items-center justify-center">
+      <div className="text-center">
+        <div className="w-8 h-8 border-2 border-accent border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+        <p className="text-sm text-text-secondary">{status}</p>
+      </div>
+    </div>
+  );
+}

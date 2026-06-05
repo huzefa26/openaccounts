@@ -43,20 +43,20 @@ async function driveFetch(url, options = {}) {
   return res;
 }
 
-export async function findFile() {
+export async function findFile(options = {}) {
   const params = new URLSearchParams({
     spaces: 'appDataFolder',
     q: `name='${FILE_NAME}'`,
     fields: 'files(id,modifiedTime)',
   });
-  const res = await driveFetch(`https://www.googleapis.com/drive/v3/files?${params}`);
+  const res = await driveFetch(`https://www.googleapis.com/drive/v3/files?${params}`, options);
   const body = await res.json();
   const files = body.files || [];
   return files.length > 0 ? { id: files[0].id, modifiedTime: files[0].modifiedTime } : null;
 }
 
-export async function readFile(fileId) {
-  const res = await driveFetch(`https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`);
+export async function readFile(fileId, options = {}) {
+  const res = await driveFetch(`https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`, options);
   return res.json();
 }
 
