@@ -1,4 +1,5 @@
 import { NavLink } from 'react-router-dom';
+import useAuthStore from '../../store/authStore';
 
 function BottomNavItem({ path, label, children }) {
   return (
@@ -19,6 +20,8 @@ function BottomNavItem({ path, label, children }) {
 }
 
 export default function BottomNav() {
+  const { user } = useAuthStore();
+
   return (
     <nav className="flex md:hidden items-center justify-around px-2 h-16 border-t border-border bg-surface fixed bottom-0 inset-x-0 z-40">
       <BottomNavItem path="/" label="Home">
@@ -44,10 +47,14 @@ export default function BottomNav() {
         </svg>
       </BottomNavItem>
       <BottomNavItem path="/profile" label="Profile">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <circle cx="12" cy="8" r="4" />
-          <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" />
-        </svg>
+        {user?.picture ? (
+          <img src={user.picture} alt="" className="w-6 h-6 rounded-full border border-border" />
+        ) : (
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="12" cy="8" r="4" />
+            <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" />
+          </svg>
+        )}
       </BottomNavItem>
     </nav>
   );
