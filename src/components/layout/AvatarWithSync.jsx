@@ -30,6 +30,7 @@ export default function AvatarWithSync({ size = 'md' }) {
       <img
         src={user.picture}
         alt=""
+        referrerpolicy="no-referrer"
         className={`${lg ? 'size-8' : 'size-6'} rounded-full border border-border hover:ring-2 hover:ring-accent/30 transition-all duration-base`}
       />
       {/* Spinning ring shown during sync */}
