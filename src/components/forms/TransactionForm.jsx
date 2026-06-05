@@ -10,13 +10,13 @@ function today() {
   return new Date().toISOString().slice(0, 10);
 }
 
-function createRow() {
-  return { id: crypto.randomUUID(), categoryId: '', currency: 'AED', amount: '' };
-}
-
 export default function TransactionForm({ initialTransaction, initialLines, onSuccess }) {
   const { categories, fetchAll: fetchCategories } = useCategoryStore();
-  const { currencies, fetchAll: fetchCurrencies } = useCurrencyStore();
+  const { currencies, defaultCurrency, fetchAll: fetchCurrencies } = useCurrencyStore();
+
+  function createRow() {
+    return { id: crypto.randomUUID(), categoryId: '', currency: defaultCurrency?.code || 'AED', amount: '' };
+  }
   const { createTransaction, updateTransaction } = useTransactionStore();
 
   const isEdit = Boolean(initialTransaction);

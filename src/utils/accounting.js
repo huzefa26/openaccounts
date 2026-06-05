@@ -1,6 +1,7 @@
 import * as dbTransactions from '../db/transactions';
 import * as dbLines from '../db/transactionLines';
 import * as dbCategories from '../db/categories';
+import { dbPromise } from '../db/index';
 
 const OB_DEBIT_TYPES = ['asset', 'expense'];
 const OB_CREDIT_TYPES = ['liability', 'equity', 'income'];
@@ -26,7 +27,22 @@ export async function handleOpeningBalance(category, newBalance, defaultCurrency
     (c) => c.is_system && c.type === 'equity',
   );
 
-  if (!obe) throw new Error('Opening Balance Equity category not found');
+  if (!obe) {
+    const db = await dbPromise;
+    const now = new Date().toISOString();
+    obe = {
+      id: 'base_opening_balance_equity',
+      name: 'Opening Balance Equity',
+      type: 'equity',
+      parent_id: null,
+      description: '',
+      opening_balance: 0,
+      is_system: true,
+      created_at: now,
+      updated_at: now,
+    };
+    await db.add('categories', obe);
+  }
 
   const now = new Date().toISOString();
   const today = now.slice(0, 10);
