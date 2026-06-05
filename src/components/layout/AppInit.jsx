@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { initDB } from '../../db/index';
 import { seedFirstRun } from '../../db/seed';
 import { findFile, readFile, createFile } from '../../sync/googleDrive';
+import * as dbSettings from '../../db/settings';
 
 const STEPS = {
   checking: 'Checking Google Drive...',
@@ -68,6 +69,7 @@ export default function AppInit({ onComplete }) {
       }
 
       clearTimeout(timeout);
+      await dbSettings.set('last_synced_at', new Date().toISOString());
       setStatus(STEPS.done);
       setTimeout(() => onComplete(), 300);
     } catch (err) {
