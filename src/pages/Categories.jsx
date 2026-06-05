@@ -28,10 +28,12 @@ export default function Categories() {
     fetchTransactions();
   }, []);
 
+  const visible = categories.filter((c) => !c.is_system);
+
   const childrenMap = {};
   const roots = [];
 
-  for (const cat of categories) {
+  for (const cat of visible) {
     if (cat.parent_id) {
       if (!childrenMap[cat.parent_id]) childrenMap[cat.parent_id] = [];
       childrenMap[cat.parent_id].push(cat);
@@ -164,7 +166,7 @@ export default function Categories() {
                 </>
               );
             })}
-            {categories.length === 0 && (
+            {roots.length === 0 && (
               <tr>
                 <td colSpan={5} className="py-8 text-center text-sm text-text-tertiary">
                   No categories yet.
