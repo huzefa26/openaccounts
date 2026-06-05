@@ -9,6 +9,8 @@ const useTransactionStore = create((set, get) => ({
   error: null,
   initialized: false,
 
+  invalidateCache: () => set({ initialized: false, transactions: [], lines: [] }),
+
   fetchAll: async () => {
     if (get().initialized) return;
     set({ loading: true, error: null });

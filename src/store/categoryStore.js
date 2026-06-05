@@ -7,6 +7,8 @@ const useCategoryStore = create((set, get) => ({
   error: null,
   initialized: false,
 
+  invalidateCache: () => set({ initialized: false, categories: [] }),
+
   fetchAll: async () => {
     if (get().initialized) return;
     set({ loading: true, error: null });
