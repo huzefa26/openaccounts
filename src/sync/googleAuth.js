@@ -132,6 +132,12 @@ export function isTokenExpired() {
   return Date.now() >= Number(expiry) - 300000;
 }
 
+export async function verifySession() {
+  const session = getStoredSession();
+  if (!session) throw new Error('No session');
+  await refreshToken();
+}
+
 export function getAccessToken() {
   return localStorage.getItem(STORAGE_KEYS.ACCESS_TOKEN);
 }

@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import * as googleAuth from '../sync/googleAuth';
 
-const useAuthStore = create((set, get) => {
+const useAuthStore = create((set) => {
   const session = googleAuth.getStoredSession();
 
   return {
@@ -10,7 +10,9 @@ const useAuthStore = create((set, get) => {
     tokenExpiry: session?.tokenExpiry || null,
     isSignedIn: Boolean(session),
     loading: false,
+    booting: Boolean(session),
     error: null,
+    dbInitialized: false,
 
     signIn: async () => {
       set({ loading: true, error: null });
@@ -22,16 +24,14 @@ const useAuthStore = create((set, get) => {
           tokenExpiry: result.tokenExpiry,
           isSignedIn: true,
           loading: false,
+          booting: false,
           error: null,
         });
       } catch (err) {
         set({
           loading: false,
+          booting: false,
           error: err.message,
-          user: null,
-          accessToken: null,
-          tokenExpiry: null,
-          isSignedIn: false,
         });
       }
     },
@@ -49,9 +49,30 @@ const useAuthStore = create((set, get) => {
         tokenExpiry: null,
         isSignedIn: false,
         loading: false,
+        booting: false,
+        dbInitialized: false,
         error: null,
       });
     },
+
+    verifySession: async () => {
+      try {
+        await googleAuth.verifySession();
+        set({ booting: false });
+      } catch {
+        googleAuth.clearStorage();
+        set({
+          user: null,
+          accessToken: null,
+          tokenExpiry: null,
+          isSignedIn: false,
+          booting: false,
+          error: null,
+        });
+      }
+    },
+
+    setDbInitialized: () => set({ dbInitialized: true }),
 
     clearError: () => set({ error: null }),
   };
