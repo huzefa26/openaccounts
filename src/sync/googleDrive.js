@@ -80,6 +80,18 @@ export async function createFile(data) {
   return res.json();
 }
 
+export async function deleteFile(fileId) {
+  const token = await ensureToken();
+  const res = await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}`, {
+    method: 'DELETE',
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (res.status !== 204 && res.status !== 404) {
+    const body = await res.text();
+    throw new Error(`Drive delete error (${res.status}): ${body}`);
+  }
+}
+
 export async function updateFile(fileId, data) {
   const token = await ensureToken();
   const metadata = { name: FILE_NAME };
