@@ -135,7 +135,9 @@ export function isTokenExpired() {
 export async function verifySession() {
   const session = getStoredSession();
   if (!session) throw new Error('No session');
-  await refreshToken();
+  if (isTokenExpired()) {
+    await refreshToken();
+  }
 }
 
 export function getAccessToken() {
