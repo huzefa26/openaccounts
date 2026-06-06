@@ -1,5 +1,5 @@
 # OpenAccounts — Project Specification
-> **Version:** 1.1 | **Status:** Active
+> **Version:** 1.2 | **Status:** Active
 > This file is the single source of truth for all agent sessions. Read it in full before every session. Update it at the end of every session to reflect decisions made and work completed.
 
 ---
@@ -328,11 +328,11 @@ Parent references are resolved by name during seeding.
 | Breakpoint | Pattern |
 |---|---|
 | `< md` (mobile) | Fixed bottom navigation bar with 5 icon + label tabs |
-| `>= md` (desktop) | Top horizontal navbar with 5 links |
+| `>= md` (desktop) | Top horizontal navbar: brand left, 4 links centered, user avatar right |
 
-**Nav items (in order):** Home · Ledger · Analytics · Categories · Profile
+**Nav items (in order):** Home · Ledger · Analytics · Categories · Profile (via avatar photo)
 
-Active route is highlighted. No nested routing.
+Active route is highlighted on text links. No nested routing.
 
 ---
 
@@ -605,6 +605,7 @@ This migration runs once and never again.
 | 7 | Profile page, currency management, export data | ✅ Complete |
 | 8 | Google Sign-In via GIS token client, token storage, two-check refresh logic, auth state | ✅ Complete |
 | 9 | Google Drive sync engine (pull → merge → push), sync UI on Profile | ✅ Complete |
+| 10 | Navbar restructure: 3-section layout (logo left, nav centered, avatar right), AvatarWithSync shared component with sync overlays (amber ring/badges), full-width no constraint | ✅ Complete |
 
 ---
 
