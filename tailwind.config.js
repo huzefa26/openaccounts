@@ -85,6 +85,22 @@ export default {
       transitionDuration: {
         base: '120ms',
       },
+      keyframes: {
+        'pulse-once': {
+          '0%, 100%': { opacity: '1' },
+          '50%': { opacity: '0.6' },
+        },
+        'fade-cross': {
+          '0%': { opacity: '1', transform: 'scale(1)' },
+          '50%': { opacity: '0', transform: 'scale(0.8)' },
+          '51%': { opacity: '0', transform: 'scale(0.8)' },
+          '100%': { opacity: '1', transform: 'scale(1)' },
+        },
+      },
+      animation: {
+        'pulse-once': 'pulse-once 0.4s ease-in-out',
+        'fade-cross': 'fade-cross 0.3s ease-in-out',
+      },
     },
   },
   plugins: [],

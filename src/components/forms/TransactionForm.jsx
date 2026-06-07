@@ -239,6 +239,9 @@ export default function TransactionForm({ initialTransaction, initialLines, onSu
     );
   }
 
+  const prevBalanced = useRef({});
+  const [animating, setAnimating] = useState(new Set());
+
   function renderBalanceIndicator() {
     const codes = Object.keys(balances);
     if (codes.length === 0) return null;
@@ -247,22 +250,42 @@ export default function TransactionForm({ initialTransaction, initialLines, onSu
       <div className="flex flex-wrap gap-4 px-1">
         {codes.map((code) => {
           const { credits, debits } = balances[code];
-          const diff = debits - credits;
-          const balanced = diff === 0;
+          const balanced = credits === debits;
+          const wasBalanced = prevBalanced.current[code];
+          const isAnimating = animating.has(code);
+
+          if (wasBalanced === undefined || (!wasBalanced && balanced)) {
+            if (!isAnimating) {
+              setAnimating((prev) => new Set(prev).add(code));
+            }
+          }
+          prevBalanced.current[code] = balanced;
+
+          const lineAnimClass = isAnimating && balanced ? 'animate-pulse-once' : '';
+          const symbolAnimClass = isAnimating && balanced ? 'animate-fade-cross' : '';
+
+          function handleAnimEnd() {
+            setAnimating((prev) => {
+              const next = new Set(prev);
+              next.delete(code);
+              return next;
+            });
+          }
+
           return (
             <div
               key={code}
-              className={`flex items-center gap-1.5 text-sm font-numeric ${
-                balanced ? 'text-income' : 'text-expense'
-              }`}
+              onAnimationEnd={handleAnimEnd}
+              className={`flex items-center gap-1.5 text-sm ${lineAnimClass}`}
             >
-              <span className="font-medium text-text-secondary">{code}:</span>
-              <span className="font-numeric">{diff.toFixed(2)}</span>
-              {balanced && (
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <polyline points="20 6 9 17 4 12" />
-                </svg>
-              )}
+              <span className="text-text-secondary">Credits</span>
+              <span className="font-numeric text-text-primary">{credits.toFixed(2)}</span>
+              <span className={`font-numeric text-base leading-none ${symbolAnimClass} ${balanced ? 'text-income' : 'text-expense'}`}>
+                {balanced ? '=' : '≠'}
+              </span>
+              <span className="text-text-secondary">Debits</span>
+              <span className="font-numeric text-text-primary">{debits.toFixed(2)}</span>
+              <span className="text-xs font-numeric text-text-tertiary">{code}</span>
             </div>
           );
         })}
