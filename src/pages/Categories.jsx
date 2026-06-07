@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import useCategoryStore from '../store/categoryStore';
 import useTransactionStore from '../store/transactionStore';
+import useToastStore from '../store/toastStore';
 import CategoryRow from '../components/tables/CategoryRow';
 import CategoryForm from '../components/forms/CategoryForm';
 
@@ -71,14 +72,20 @@ export default function Categories() {
 
     const children = store.categories.filter((c) => c.parent_id === id);
     if (children.length > 0) {
-      setDeleteError('This category has sub-categories. Delete or reassign them first.');
+      useToastStore.getState().addToast({
+        message: 'Cannot delete: This category has sub-categories. Delete or reassign them first.',
+        type: 'error',
+      });
       return;
     }
 
     const { lines } = useTransactionStore.getState();
     const hasLines = lines.some((l) => l.category_id === id);
     if (hasLines) {
-      setDeleteError('This category has recorded transactions. Remove them first or reassign them.');
+      useToastStore.getState().addToast({
+        message: 'Cannot delete: This category has recorded transactions. Remove them first or reassign them.',
+        type: 'error',
+      });
       return;
     }
 

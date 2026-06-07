@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import * as googleAuth from '../sync/googleAuth';
+import useToastStore from './toastStore';
 
 const useAuthStore = create((set) => {
   const session = googleAuth.getStoredSession();
@@ -27,6 +28,11 @@ const useAuthStore = create((set) => {
           booting: false,
           error: null,
         });
+        useToastStore.getState().addToast({
+          message: `Signed in as ${result.user.email}.`,
+          type: 'success',
+          duration: 3000,
+        });
       } catch (err) {
         set({
           loading: false,
@@ -52,6 +58,12 @@ const useAuthStore = create((set) => {
         booting: false,
         dbInitialized: false,
         error: null,
+      });
+      useToastStore.getState().clearAll();
+      useToastStore.getState().addToast({
+        message: 'Signed out.',
+        type: 'info',
+        duration: 3000,
       });
     },
 

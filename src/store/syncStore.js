@@ -4,6 +4,7 @@ import { sync as runSyncEngine } from '../sync/syncEngine';
 import useTransactionStore from './transactionStore';
 import useCategoryStore from './categoryStore';
 import useCurrencyStore from './currencyStore';
+import useToastStore from './toastStore';
 
 const useSyncStore = create((set, get) => ({
   status: 'idle',
@@ -35,8 +36,18 @@ const useSyncStore = create((set, get) => ({
       ]);
 
       set({ status: 'idle', lastSynced, error: null });
+      useToastStore.getState().addToast({
+        message: 'Sync complete.',
+        type: 'success',
+        duration: 3000,
+      });
     } catch (err) {
       set({ status: 'error', error: err.message });
+      useToastStore.getState().addToast({
+        message: 'Sync failed. Try again.',
+        type: 'error',
+        duration: 5000,
+      });
     }
   },
 

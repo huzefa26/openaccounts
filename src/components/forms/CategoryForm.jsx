@@ -5,6 +5,7 @@ import Select from '../ui/Select';
 import Button from '../ui/Button';
 import useCategoryStore from '../../store/categoryStore';
 import useCurrencyStore from '../../store/currencyStore';
+import useToastStore from '../../store/toastStore';
 import { handleOpeningBalance } from '../../utils/accounting';
 
 const TYPE_OPTIONS = [
@@ -73,6 +74,11 @@ export default function CategoryForm({ category, onClose }) {
       }
 
       onClose();
+      useToastStore.getState().addToast({
+        message: isEdit ? 'Category saved.' : 'Category created.',
+        type: 'success',
+        duration: 3000,
+      });
     } catch (err) {
       setErrors({ submit: err.message });
     } finally {

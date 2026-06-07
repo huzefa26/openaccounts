@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import useCurrencyStore from '../store/currencyStore';
 import useSyncStore from '../store/syncStore';
 import useAuthStore from '../store/authStore';
+import useToastStore from '../store/toastStore';
 import { exportAllData } from '../utils/export';
 import { baseCurrencies } from '../constants/baseCurrencies';
 import { resetDB } from '../db/index';
@@ -298,6 +299,11 @@ export default function Profile() {
     setExporting(true);
     try {
       await exportAllData();
+      useToastStore.getState().addToast({
+        message: 'Export downloaded.',
+        type: 'success',
+        duration: 3000,
+      });
     } catch (err) {
       console.error('Export failed:', err);
     }

@@ -9,6 +9,7 @@ import Ledger from './pages/Ledger';
 import Analytics from './pages/Analytics';
 import Categories from './pages/Categories';
 import Profile from './pages/Profile';
+import ToastContainer from './components/ui/ToastContainer';
 
 function LoadingScreen() {
   return (
@@ -47,6 +48,7 @@ export default function App() {
           <Route path="profile" element={<Profile />} />
         </Route>
       </Routes>
+      <ToastContainer />
     </BrowserRouter>
   );
 }
