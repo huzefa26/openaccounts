@@ -11,6 +11,7 @@ export default function Input({
   placeholder,
   required,
   disabled,
+  className = '',
 }) {
   const [touched, setTouched] = useState(false);
 
@@ -37,7 +38,7 @@ export default function Input({
         placeholder={placeholder}
         required={required}
         disabled={disabled}
-        className={`px-3 py-2 text-sm bg-surface border rounded-md transition-colors duration-base outline-none focus:ring-2 focus:ring-accent focus:border-accent ${
+        className={`px-3 py-2 text-sm bg-surface border rounded-md transition-colors duration-base outline-none focus:ring-2 focus:ring-accent focus:border-accent ${className} ${
           touched && error ? 'border-error' : 'border-border hover:border-border-strong'
         } ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
       />

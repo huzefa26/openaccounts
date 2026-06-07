@@ -131,6 +131,7 @@ export default function CategoryForm({ category, onClose }) {
           value={openingBalance}
           onChange={(e) => setOpeningBalance(e.target.value)}
           placeholder="0"
+          className="font-numeric"
         />
 
         {errors.submit && (

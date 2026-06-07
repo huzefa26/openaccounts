@@ -364,7 +364,7 @@ export default function Profile() {
                         : 'Not signed in'}
                 </span>
                 <span className="text-xs text-text-tertiary">Last synced:</span>
-                <span className="text-xs text-text-secondary">
+                <span className="text-xs text-text-secondary font-numeric">
                   {syncStore.lastSynced
                     ? new Date(syncStore.lastSynced).toLocaleString()
                     : authStore.isSignedIn ? 'Never' : '—'}

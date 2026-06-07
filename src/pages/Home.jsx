@@ -74,8 +74,8 @@ function RecentTransactions({ transactions, lines }) {
                       <div className="flex flex-col gap-0.5">
                         {Object.entries(totals).map(([currency, amount]) => (
                           <div key={currency} className="flex items-center justify-end gap-2">
-                            <span className="text-xs text-text-tertiary">{currency}</span>
-                            <span className="w-24 text-right">
+                            <span className="text-xs text-text-tertiary font-numeric">{currency}</span>
+                            <span className="w-24 text-right font-numeric">
                               {Number(amount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                             </span>
                           </div>

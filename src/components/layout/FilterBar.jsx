@@ -90,6 +90,7 @@ export default function FilterBar({ filters, categories, currencies, onFilterCha
               value={filters.amountMin}
               onChange={(e) => handle('amountMin', e.target.value)}
               placeholder="0"
+              className="font-numeric"
             />
           </div>
           <div className="w-32">
@@ -100,6 +101,7 @@ export default function FilterBar({ filters, categories, currencies, onFilterCha
               value={filters.amountMax}
               onChange={(e) => handle('amountMax', e.target.value)}
               placeholder="99999"
+              className="font-numeric"
             />
           </div>
         </div>

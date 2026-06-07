@@ -98,8 +98,8 @@ export default function LedgerTable({
                           <span className="text-xs text-text-secondary truncate max-w-[100px]" title={catName(categories, l.category_id)}>
                             {catName(categories, l.category_id)}
                           </span>
-                          <span className="text-xs text-text-tertiary w-8 text-right">{l.currency}</span>
-                          <span className="text-income w-24 text-right">{formatAmount(l.amount)}</span>
+                          <span className="text-xs text-text-tertiary w-8 text-right font-numeric">{l.currency}</span>
+                          <span className="text-income w-24 text-right font-numeric">{formatAmount(l.amount)}</span>
                         </div>
                       ))}
                     </div>
@@ -115,8 +115,8 @@ export default function LedgerTable({
                           <span className="text-xs text-text-secondary truncate max-w-[100px]" title={catName(categories, l.category_id)}>
                             {catName(categories, l.category_id)}
                           </span>
-                          <span className="text-xs text-text-tertiary w-8 text-right">{l.currency}</span>
-                          <span className="text-expense w-24 text-right">{formatAmount(l.amount)}</span>
+                          <span className="text-xs text-text-tertiary w-8 text-right font-numeric">{l.currency}</span>
+                          <span className="text-expense w-24 text-right font-numeric">{formatAmount(l.amount)}</span>
                         </div>
                       ))}
                     </div>
