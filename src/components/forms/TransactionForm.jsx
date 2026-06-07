@@ -242,6 +242,20 @@ export default function TransactionForm({ initialTransaction, initialLines, onSu
   const prevBalanced = useRef({});
   const [animating, setAnimating] = useState(new Set());
 
+  useEffect(() => {
+    const next = new Set(animating);
+    for (const code of Object.keys(balances)) {
+      const { credits, debits } = balances[code];
+      const balanced = credits === debits;
+      const wasBalanced = prevBalanced.current[code];
+      if (wasBalanced !== undefined && !wasBalanced && balanced) {
+        next.add(code);
+      }
+      prevBalanced.current[code] = balanced;
+    }
+    setAnimating(next);
+  }, [balances]);
+
   function renderBalanceIndicator() {
     const codes = Object.keys(balances);
     if (codes.length === 0) return null;
@@ -251,15 +265,7 @@ export default function TransactionForm({ initialTransaction, initialLines, onSu
         {codes.map((code) => {
           const { credits, debits } = balances[code];
           const balanced = credits === debits;
-          const wasBalanced = prevBalanced.current[code];
           const isAnimating = animating.has(code);
-
-          if (wasBalanced === undefined || (!wasBalanced && balanced)) {
-            if (!isAnimating) {
-              setAnimating((prev) => new Set(prev).add(code));
-            }
-          }
-          prevBalanced.current[code] = balanced;
 
           const lineAnimClass = isAnimating && balanced ? 'animate-pulse-once' : '';
           const symbolAnimClass = isAnimating && balanced ? 'animate-fade-cross' : '';
