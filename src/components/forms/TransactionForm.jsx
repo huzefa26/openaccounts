@@ -18,7 +18,7 @@ export default function TransactionForm({ initialTransaction, initialLines, onSu
   function createRow() {
     return { id: crypto.randomUUID(), categoryId: '', currency: defaultCurrency?.code || 'AED', amount: '' };
   }
-  const { createTransaction, updateTransaction } = useTransactionStore();
+  const { createTransaction, updateTransaction, formRestoreState, saveFormRestoreState, markFormRestored, undoRestoreState, clearUndoRestoreState } = useTransactionStore();
 
   const isEdit = Boolean(initialTransaction);
 
@@ -54,6 +54,39 @@ export default function TransactionForm({ initialTransaction, initialLines, onSu
   const [toRows, setToRows] = useState(initRows().toRows);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState(null);
+
+  const formStateRef = useRef({ date, description, notes, fromRows, toRows });
+  useEffect(() => { formStateRef.current = { date, description, notes, fromRows, toRows }; });
+
+  useEffect(() => {
+    if (!isEdit && formRestoreState) {
+      setDate(formRestoreState.date);
+      setDescription(formRestoreState.description);
+      setNotes(formRestoreState.notes || '');
+      setFromRows(formRestoreState.fromRows);
+      setToRows(formRestoreState.toRows);
+      markFormRestored();
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!isEdit && undoRestoreState) {
+      setDate(undoRestoreState.date);
+      setDescription(undoRestoreState.description);
+      setNotes(undoRestoreState.notes || '');
+      setFromRows(undoRestoreState.fromRows);
+      setToRows(undoRestoreState.toRows);
+      clearUndoRestoreState();
+    }
+  }, [undoRestoreState]);
+
+  useEffect(() => {
+    return () => {
+      if (!isEdit) {
+        saveFormRestoreState(formStateRef.current);
+      }
+    };
+  }, [isEdit]);
 
   useEffect(() => { fetchCategories(); fetchCurrencies(); }, []);
 

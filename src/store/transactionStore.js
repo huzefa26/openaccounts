@@ -52,13 +52,25 @@ const useTransactionStore = create((set, get) => ({
         label: 'Undo',
         onClick: async () => {
           const state = get();
-          if (state.lastSavedTransaction) {
-            await dbLines.deleteByTransactionId(state.lastSavedTransaction.transaction.id);
-            await dbTransactions.del(state.lastSavedTransaction.transaction.id);
+          const { transaction, lines } = state.lastSavedTransaction || {};
+          if (transaction && lines) {
+            await dbLines.deleteByTransactionId(transaction.id);
+            await dbTransactions.del(transaction.id);
             set((s) => ({
-              transactions: s.transactions.filter((t) => t.id !== state.lastSavedTransaction.transaction.id),
-              lines: s.lines.filter((l) => l.transaction_id !== state.lastSavedTransaction.transaction.id),
+              transactions: s.transactions.filter((t) => t.id !== transaction.id),
+              lines: s.lines.filter((l) => l.transaction_id !== transaction.id),
               lastSavedTransaction: null,
+              undoRestoreState: {
+                date: transaction.date,
+                description: transaction.description,
+                notes: transaction.notes || '',
+                fromRows: lines
+                  .filter((l) => l.entry_type === 'credit')
+                  .map((l) => ({ id: crypto.randomUUID(), categoryId: l.category_id, currency: l.currency, amount: String(l.amount) })),
+                toRows: lines
+                  .filter((l) => l.entry_type === 'debit')
+                  .map((l) => ({ id: crypto.randomUUID(), categoryId: l.category_id, currency: l.currency, amount: String(l.amount) })),
+              },
             }));
           }
         },
@@ -117,6 +129,10 @@ const useTransactionStore = create((set, get) => ({
   saveFormRestoreState: (data) => set({ formRestoreState: data }),
 
   markFormRestored: () => set({ formRestoreState: null }),
+
+  undoRestoreState: null,
+
+  clearUndoRestoreState: () => set({ undoRestoreState: null }),
 }));
 
 export default useTransactionStore;
