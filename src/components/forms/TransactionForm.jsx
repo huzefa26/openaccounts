@@ -348,9 +348,6 @@ export default function TransactionForm({ initialTransaction, initialLines, onSu
       }
     }
 
-    if (e.key === 'Escape' && e.target.closest('[data-categoryselect]')) {
-      return;
-    }
   }
 
   return (

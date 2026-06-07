@@ -111,7 +111,22 @@ export default function CategorySelect({ value, onChange, placeholder = 'Select 
 
       {open && (
         <div className="absolute top-full left-0 right-0 mt-1 max-h-72 overflow-y-auto bg-surface border border-border rounded-md shadow-pop z-50">
-          <Command shouldFilter={true} loop>
+          <Command
+            shouldFilter={true}
+            loop
+            onKeyDown={(e) => {
+              if (e.key === 'Escape') {
+                e.preventDefault();
+                setOpen(false);
+                setSearch('');
+                triggerRef.current?.focus();
+              }
+              if (e.key === 'Tab') {
+                setOpen(false);
+                setSearch('');
+              }
+            }}
+          >
             <div className="flex items-center gap-2 px-3 border-b border-border">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-text-tertiary flex-shrink-0">
                 <circle cx="11" cy="11" r="8" />
