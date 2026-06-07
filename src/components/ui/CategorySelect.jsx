@@ -69,7 +69,7 @@ export default function CategorySelect({ value, onChange, placeholder = 'Select 
       </button>
 
       {open && (
-        <div className="absolute top-full left-0 mt-1 w-72 max-h-72 overflow-y-auto bg-surface border border-border rounded-md shadow-pop z-50">
+        <div className="absolute top-full left-0 right-0 mt-1 max-h-72 overflow-y-auto bg-surface border border-border rounded-md shadow-pop z-50">
           <Command shouldFilter={true} loop>
             <div className="flex items-center gap-2 px-3 border-b border-border">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-text-tertiary flex-shrink-0">
@@ -96,7 +96,11 @@ export default function CategorySelect({ value, onChange, placeholder = 'Select 
                 if (group.roots.length === 0 && group.children.length === 0) return null;
 
                 return (
-                  <Command.Group key={type} heading={TYPE_LABELS[type]}>
+                  <Command.Group
+                    key={type}
+                    heading={TYPE_LABELS[type]}
+                    className="[&_[cmdk-group-heading]]:px-3 [&_[cmdk-group-heading]]:pt-3 [&_[cmdk-group-heading]]:pb-1 [&_[cmdk-group-heading]]:text-xs [&_[cmdk-group-heading]]:font-semibold [&_[cmdk-group-heading]]:text-text-secondary [&_[cmdk-group-heading]]:uppercase [&_[cmdk-group-heading]]:tracking-wider"
+                  >
                     {group.roots.map((cat) => (
                       <Command.Item
                         key={cat.id}
