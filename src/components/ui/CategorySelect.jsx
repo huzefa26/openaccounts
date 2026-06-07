@@ -25,12 +25,40 @@ export default function CategorySelect({ value, onChange, placeholder = 'Select 
   const grouped = useMemo(() => {
     const visible = categories.filter((c) => !c.is_system);
     const groups = {};
+
     for (const type of TYPE_ORDER) {
       const typeCategories = visible.filter((c) => c.type === type);
       if (typeCategories.length === 0) continue;
-      const roots = typeCategories.filter((c) => !c.parent_id);
-      const children = typeCategories.filter((c) => c.parent_id);
-      groups[type] = { roots, children };
+
+      const childrenMap = {};
+      const roots = [];
+
+      for (const cat of typeCategories) {
+        if (cat.parent_id) {
+          if (!childrenMap[cat.parent_id]) childrenMap[cat.parent_id] = [];
+          childrenMap[cat.parent_id].push(cat);
+        } else {
+          roots.push(cat);
+        }
+      }
+
+      const items = [];
+      function traverse(nodes, depth, parentName) {
+        nodes.sort((a, b) => a.name.localeCompare(b.name));
+        for (const node of nodes) {
+          items.push({
+            id: node.id,
+            name: node.name,
+            depth,
+            value: parentName ? `${node.name} ${parentName}` : node.name,
+          });
+          const children = childrenMap[node.id];
+          if (children) traverse(children, depth + 1, node.name);
+        }
+      }
+
+      traverse(roots, 0, null);
+      groups[type] = items;
     }
     return groups;
   }, [categories]);
@@ -92,8 +120,7 @@ export default function CategorySelect({ value, onChange, placeholder = 'Select 
 
               {TYPE_ORDER.map((type) => {
                 const group = grouped[type];
-                if (!group) return null;
-                if (group.roots.length === 0 && group.children.length === 0) return null;
+                if (!group || group.length === 0) return null;
 
                 return (
                   <Command.Group
@@ -101,22 +128,14 @@ export default function CategorySelect({ value, onChange, placeholder = 'Select 
                     heading={TYPE_LABELS[type]}
                     className="[&_[cmdk-group-heading]]:px-3 [&_[cmdk-group-heading]]:pt-3 [&_[cmdk-group-heading]]:pb-1 [&_[cmdk-group-heading]]:text-xs [&_[cmdk-group-heading]]:font-semibold [&_[cmdk-group-heading]]:text-text-secondary [&_[cmdk-group-heading]]:uppercase [&_[cmdk-group-heading]]:tracking-wider"
                   >
-                    {group.roots.map((cat) => (
+                    {group.map((cat) => (
                       <Command.Item
                         key={cat.id}
-                        value={cat.name}
+                        value={cat.value}
                         onSelect={() => handleSelect(cat.id)}
-                        className="flex items-center px-3 py-1.5 text-sm text-text-primary cursor-pointer aria-selected:bg-accent-light aria-selected:text-text-primary transition-colors duration-base"
-                      >
-                        {cat.name}
-                      </Command.Item>
-                    ))}
-                    {group.children.map((cat) => (
-                      <Command.Item
-                        key={cat.id}
-                        value={`${cat.name} ${group.roots.find((r) => r.id === cat.parent_id)?.name || ''}`}
-                        onSelect={() => handleSelect(cat.id)}
-                        className="flex items-center px-3 py-1.5 text-sm text-text-secondary cursor-pointer aria-selected:bg-accent-light aria-selected:text-text-primary pl-6 transition-colors duration-base"
+                        className={`flex items-center px-3 py-1.5 text-sm cursor-pointer aria-selected:bg-accent-light transition-colors duration-base ${
+                          cat.depth === 0 ? 'text-text-primary' : 'text-text-secondary pl-6'
+                        }`}
                       >
                         {cat.name}
                       </Command.Item>
