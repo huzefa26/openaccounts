@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import Input from '../ui/Input';
 import Select from '../ui/Select';
+import CategorySelect from '../ui/CategorySelect';
 import Button from '../ui/Button';
 import useCategoryStore from '../../store/categoryStore';
 import useCurrencyStore from '../../store/currencyStore';
@@ -55,8 +56,6 @@ export default function TransactionForm({ initialTransaction, initialLines, onSu
   const [saveError, setSaveError] = useState(null);
 
   useEffect(() => { fetchCategories(); fetchCurrencies(); }, []);
-
-  const nonSystemCategories = categories.filter((c) => !c.is_system);
 
   const balances = useMemo(() => {
     const currencyMap = {};
@@ -174,11 +173,10 @@ export default function TransactionForm({ initialTransaction, initialLines, onSu
         {rows.map((row, index) => (
           <div key={row.id} className="flex items-start gap-2">
             <div className="flex-1 min-w-0">
-              <Select
-                name={`${side}-category-${index}`}
+              <CategorySelect
                 value={row.categoryId}
-                onChange={(e) => updateRow(side, row.id, 'categoryId', e.target.value)}
-                options={nonSystemCategories.map((c) => ({ value: c.id, label: c.name }))}
+                onChange={(id) => updateRow(side, row.id, 'categoryId', id)}
+                categories={categories}
                 placeholder="Select category"
               />
             </div>
