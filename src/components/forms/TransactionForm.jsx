@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import Input from '../ui/Input';
 import Select from '../ui/Select';
 import CategorySelect from '../ui/CategorySelect';
@@ -97,8 +97,16 @@ export default function TransactionForm({ initialTransaction, initialLines, onSu
   }
 
   function addRow(side) {
-    if (side === 'from') setFromRows((prev) => [...prev, createRow()]);
-    else setToRows((prev) => [...prev, createRow()]);
+    const newRow = createRow();
+    if (side === 'from') setFromRows((prev) => [...prev, newRow]);
+    else setToRows((prev) => [...prev, newRow]);
+    requestAnimationFrame(() => {
+      const el = document.querySelector(`[data-row-id="${newRow.id}"]`);
+      if (el) {
+        const trigger = el.querySelector('[data-categoryselect] button');
+        trigger?.focus();
+      }
+    });
   }
 
   function deleteRow(side, id) {
@@ -171,7 +179,7 @@ export default function TransactionForm({ initialTransaction, initialLines, onSu
     return (
       <div className="flex flex-col gap-2">
         {rows.map((row, index) => (
-          <div key={row.id} className="flex items-start gap-2">
+          <div key={row.id} data-row-id={row.id} className="flex items-start gap-2">
             <div className="flex-1 min-w-0">
               <CategorySelect
                 value={row.categoryId}
@@ -262,8 +270,29 @@ export default function TransactionForm({ initialTransaction, initialLines, onSu
     );
   }
 
+  function handleKeyDown(e) {
+    if (e.ctrlKey && e.key === 's') {
+      e.preventDefault();
+      handleSubmit(e);
+      return;
+    }
+
+    if (e.key === 'Enter') {
+      const match = e.target.name?.match(/^(from|to)-amount-(\d+)$/);
+      if (match) {
+        e.preventDefault();
+        addRow(match[1]);
+        return;
+      }
+    }
+
+    if (e.key === 'Escape' && e.target.closest('[data-categoryselect]')) {
+      return;
+    }
+  }
+
   return (
-    <form onSubmit={handleSubmit} className="flex flex-col gap-5">
+    <form onSubmit={handleSubmit} onKeyDown={handleKeyDown} className="flex flex-col gap-5">
       <Input
         label="Date"
         name="date"
