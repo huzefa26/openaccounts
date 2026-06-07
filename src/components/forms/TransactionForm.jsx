@@ -203,7 +203,7 @@ export default function TransactionForm({ initialTransaction, initialLines, onSu
               type="button"
               onClick={() => deleteRow(side, row.id)}
               disabled={rows.length <= 1}
-              className={`mt-6 inline-flex items-center justify-center w-8 h-8 rounded-md transition-colors duration-base flex-shrink-0 ${
+              className={`inline-flex items-center justify-center w-8 h-8 rounded-md transition-colors duration-base flex-shrink-0 ${
                 rows.length <= 1
                   ? 'text-text-disabled cursor-not-allowed'
                   : 'text-text-tertiary hover:text-expense hover:bg-expense-bg'
