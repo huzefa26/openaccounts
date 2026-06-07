@@ -1,5 +1,5 @@
 # OpenAccounts — Project Specification
-> **Version:** 1.2 | **Status:** Active
+> **Version:** 1.3 | **Status:** Active
 > This file is the single source of truth for all agent sessions. Read it in full before every session. Update it at the end of every session to reflect decisions made and work completed.
 
 ---
@@ -19,6 +19,7 @@
 |---|---|
 | Framework | React 18 (functional components + hooks only) |
 | Styling | Tailwind CSS v3 (utility classes only — no inline styles) |
+| cmdk | Searchable combobox primitive |
 | Build tool | Vite |
 | Routing | React Router v6 |
 | State management | Zustand |
@@ -44,7 +45,7 @@
 ```
 src/
 ├── components/
-│   ├── ui/                  # Reusable primitives: Button, Input, Modal, Badge, etc.
+│   ├── ui/                  # Reusable primitives: Button, Input, Modal, Select, MultiSelect, Toast, ToastContainer, CategorySelect.
 │   ├── layout/              # AppShell, Navbar (desktop), BottomNav (mobile)
 │   ├── forms/               # TransactionForm, CategoryForm
 │   └── tables/              # LedgerTable, CategoryTable
@@ -71,7 +72,8 @@ src/
 │   ├── currencyStore.js     # Zustand: currencies list + default
 │   ├── settingsStore.js     # Zustand: app-wide settings
 │   ├── authStore.js         # Zustand: GIS auth state
-│   └── syncStore.js         # Zustand: sync state (in-progress, last-synced, error), timestamp
+│   ├── syncStore.js         # Zustand: sync state (in-progress, last-synced, error), timestamp
+|   └── toastStore.js        # Zustand: toast queue
 ├── hooks/
 │   ├── useBalance.js        # Net running balance for a category (multi-currency aware)
 │   └── useMetrics.js        # Home page metrics computations
@@ -346,12 +348,18 @@ Active route is highlighted on text links. No nested routing.
 |---|---|---|
 | Date | Date picker | Default: today (`YYYY-MM-DD`) |
 | Description | Text input | Required |
-| From (credits) | Dynamic rows | Min 1 row. Each row: Category dropdown, Currency dropdown (default: home currency), Amount input. Add row button. Delete row button (disabled when only 1 row remains) |
+| From (credits) | Dynamic rows | Dynamic rows. Min 1 row. Each row: `CategorySelect` component · Currency dropdown · Amount input. Add row button. Delete row button (disabled when only 1 row remains) |
 | To (debits) | Dynamic rows | Same structure as From |
 | Notes | Textarea | Optional |
 | Save | Button | Disabled until per-currency invariant is met |
 
-Below From and To sections: a real-time per-currency balance indicator showing difference (e.g. "AED: 0.00 ✓" or "AED: −50.00").
+**Keyboard shortcuts:**
+- `Ctrl+S` — submits a valid form; no-op if invariant not met
+- `Enter` on an amount input — appends a new row to the same section, moves focus to the Category field of the new row
+- `Tab` — logical field order: Date → Description → From rows (Category → Currency → Amount per row) → To rows → Notes → Save
+- `Escape` — closes the `CategorySelect` popover if open; closes any modal if open
+
+Below From and To sections: A per-currency equality indicator. Format: `Credits AED 100.00 = Debits AED 100.00`. One line per currency. Uses `font-numeric` for amounts. Unbalanced state: `≠` sign, red/amber colour. Balanced state: `=` sign, green colour, with a one-time pulse animation and a `≠` → `=` fade-cross transition on each transition to balanced. Hidden entirely when no amounts have been entered.
 
 On Save: write transaction + all lines to IndexedDB. Update Zustand stores. Reset form (today's date, cleared fields, 1 row each side).
 
@@ -391,7 +399,7 @@ Each row shows: Date · Description · Per-currency total amounts (debit side).
 
 Multi-line transactions display stacked rows in From/To cells (one sub-row per line).
 
-**Edit:** Opens the Transaction Form (same as Home page) in a modal or slide-over panel, pre-filled with the transaction's existing data. On save: update transaction + delete old lines + insert new lines (update `updated_at` on transaction).
+**Edit:** Opens the Transaction Form (same as Home page) in a modal or slide-over panel, pre-filled with the transaction's existing data. It includes `CategorySelect` and all keyboard shortcuts by inheritance. On save: update transaction + delete old lines + insert new lines (update `updated_at` on transaction).
 
 **Delete:** Hard delete with a confirmation dialog: *"Delete this transaction? This cannot be undone."* Deletes transaction record and all its lines.
 
@@ -606,10 +614,142 @@ This migration runs once and never again.
 | 8 | Google Sign-In via GIS token client, token storage, two-check refresh logic, auth state | ✅ Complete |
 | 9 | Google Drive sync engine (pull → merge → push), sync UI on Profile | ✅ Complete |
 | 10 | Navbar restructure: 3-section layout (logo left, nav centered, avatar right), AvatarWithSync shared component with sync overlays (amber ring/badges), full-width no constraint | ✅ Complete |
+| 11 | Monospaced numbers — register `font-numeric` in Tailwind config, apply to all amounts, balances, and dates app-wide | ⏳ Pending |
+| 12 | `CategorySelect` component — searchable combobox built on `cmdk` following the shadcn Command/Combobox pattern; grouped by type, children indented, auto-focus top match, keyboard navigation; replace all category inputs in `TransactionForm` | ⏳ Pending |
+| 13 | Transaction form enhancements — keyboard shortcuts (`Ctrl+S`, `Tab`, `Enter`, `Escape`); zero-balance equality indicator with animation | ⏳ Pending |
+| 14 | Toast notification system — `toastStore`, `Toast`, `ToastContainer`; all event wiring; Undo for transaction save; clear on navigation and sign-out | ⏳ Pending |
 
 ---
 
-## 13. Open Items (Deferred — Do Not Implement Yet)
+## 13. Next Phases (planned)
+
+### Phase 11 — Monospaced numbers
+
+**Scope:** `tailwind.config.js`, and a targeted class-addition pass across `src/components/` and `src/pages/`.
+
+**Work:**
+Register `font-numeric` in `tailwind.config.js` under `theme.extend.fontFamily`:
+```js
+numeric: ['Geist Mono', 'Roboto Mono', 'monospace'],
+```
+Then apply the `font-numeric` Tailwind class to every instance of: transaction amounts (form inputs and ledger display), balance totals, currency symbols when adjacent to amounts, opening balance fields, net balance on the Categories page, all date strings (ledger column, recent transactions list, metrics), and the per-currency balance indicator on the transaction form.
+
+**Do not touch:** Any logic, stores, DB, or layout structure.
+
+**Acceptance criteria:** All amounts, balances, and dates render in Geist Mono / Roboto Mono. Non-numeric UI text (labels, descriptions, nav items) is unaffected.
+
+---
+
+### Phase 12 — CategorySelect component
+
+**Scope:** `src/components/ui/CategorySelect.jsx` (new), `src/components/forms/TransactionForm.jsx`.
+
+**Work:**
+
+Build `CategorySelect` as a custom combobox component following the shadcn Command/Combobox pattern, using `cmdk` as the underlying primitive. It replaces every category `<select>` in the transaction form.
+
+*Behaviour:*
+- Trigger button shows the selected category name, or a placeholder when empty. No indentation, no breadcrumb — just the name, regardless of whether it's a root or child category.
+- Clicking the trigger opens a popover with a search input auto-focused.
+- Typing filters all options by substring match (case-insensitive) across both parent and child category names.
+- The top matching result is automatically in a focused/highlighted state (visually equivalent to hover) so pressing `Enter` immediately selects it.
+- Options are grouped under their account type label (Assets, Liabilities, Income, Expenses, Equity). Group labels are non-selectable headers.
+- Within each group, root categories are listed first. Their children appear immediately below them, indented with a left padding increment and slightly muted text weight.
+- `is_system: true` categories (Opening Balance Equity) are never shown.
+- No account type colour tokens are applied at this stage — that is a separate future session.
+- If search produces no results, show: *"No categories found."*
+
+*Keyboard:*
+- `↑` / `↓` — move focus through options (wraps within results)
+- `Enter` — selects the focused option, closes the popover
+- `Escape` — closes the popover without selecting, returns focus to the trigger
+
+*Wiring:*
+Replace all existing category dropdowns in `TransactionForm` (From rows and To rows) with `CategorySelect`. Pass the full categories list from `categoryStore`. The component receives `value`, `onChange`, and `placeholder` props.
+
+**Do not touch:** Ledger edit modal (separate instance, addressed in a later pass), Categories page dropdowns, any store or DB logic.
+
+**Acceptance criteria:** Typing in the search field filters options correctly. Arrow key navigation works. The top result is auto-focused on open and on each keystroke. Selecting a child category shows only its name in the trigger. `Escape` closes without selecting. System categories never appear.
+
+---
+
+### Phase 13 — Transaction form enhancements
+
+**Scope:** `src/components/forms/TransactionForm.jsx`, `src/utils/accounting.js` (balance indicator logic only).
+
+**Work:**
+
+*Keyboard shortcuts:*
+- `Ctrl+S` — submits the form if the per-currency invariant is met; does nothing if the form is invalid. Attach to `keydown` on the form container with `e.preventDefault()` to suppress browser save dialog.
+- `Tab` — ensure logical focus order: Date → Description → From row 1 (Category, Currency, Amount) → From row 2… → To row 1… → Notes → Save button.
+- `Enter` — when pressed while focus is on an amount input (the last field in a row), append a new row to the same section (From or To) and move focus to the Category field of the new row.
+- `Escape` — if the `CategorySelect` popover is open, close it and return focus to the trigger. If no popover is open and a modal is open, close the modal.
+
+*Zero-balance success indicator:*
+
+Replace the current per-currency difference display with an equality statement format. For each currency present in the form:
+
+- **Unbalanced state:** `Credits AED 100.00 ≠ Debits AED 150.00` — displayed in the existing unbalanced colour (red/amber).
+- **Balanced state:** `Credits AED 100.00 = Debits AED 100.00` — displayed in green. On transition from unbalanced to balanced, play a brief success animation: the `≠` flips to `=` with a fade-cross transition, and the line pulses green once.
+
+One line per currency. Use `font-numeric` for all amounts in this indicator. If the form has no amounts entered yet, the indicator is hidden entirely.
+
+**Do not touch:** CategorySelect internals (Phase 12), any store, DB, or sync logic.
+
+**Acceptance criteria:** `Ctrl+S` saves a valid form and does nothing on an invalid one. `Enter` on an amount field adds a row and moves focus correctly. The balance indicator shows the equality format with correct amounts per currency. The animation fires exactly once on each transition from unbalanced to balanced.
+
+---
+
+### Phase 14 — Toast notification system
+
+**Scope:** `src/store/toastStore.js` (new), `src/components/ui/Toast.jsx` (new), `src/components/ui/ToastContainer.jsx` (new), `src/App.jsx`, plus targeted wiring in existing stores and components.
+
+**Work:**
+
+*Infrastructure:*
+
+`toastStore.js` — Zustand store. State: `toasts: []` where each toast is `{ id, message, type, duration, action }`. Actions: `addToast(toast)`, `removeToast(id)`, `clearAll()`. Types: `success`, `error`, `info`.
+
+`Toast.jsx` — single toast. Shows icon (check / × / info), message, optional action link, and a manual `×` dismiss button. Auto-dismisses after `duration` ms except when `type === 'error'` (manual close only). Entry animation: slide up from bottom. Exit: fade out.
+
+`ToastContainer.jsx` — renders the active queue. Position: fixed, bottom-right on `md+`, bottom-centre on mobile. Max 3 toasts visible; when a 4th is added, the oldest is removed immediately. Mount inside `App.jsx` at the root level, outside the Router's page components.
+
+*Clearing behaviour:*
+- Browser refresh: automatic (Zustand is in-memory, not persisted).
+- Sign-out: call `toastStore.clearAll()` in the sign-out handler in `googleAuth.js`.
+- Page navigation: add a `useEffect` in `ToastContainer` that listens to React Router's `useLocation()` — on every route change, call `toastStore.clearAll()`.
+
+*Undo (transaction save only):*
+
+After a transaction is saved, `transactionStore` stores the full payload of the just-saved transaction + lines as `lastSavedTransaction`. The success toast message is *"Transaction saved"* with an *"Undo"* action link. Clicking Undo: hard-deletes the saved transaction and its lines, restores the form to its pre-save state, dismisses the toast. After 5 seconds: toast auto-dismisses, `lastSavedTransaction` is cleared. No undo is offered for edits or deletes — those are final.
+
+*Event wiring:*
+
+| Event | Type | Duration | Message | Action |
+|---|---|---|---|---|
+| Transaction saved | success | 5s | "Transaction saved." | Undo |
+| Transaction updated | success | 3s | "Transaction updated." | — |
+| Transaction deleted | success | 3s | "Transaction deleted." | — |
+| Category created | success | 3s | "Category created." | — |
+| Category updated | success | 3s | "Category saved." | — |
+| Category delete blocked | error | manual | "Cannot delete: [reason]." | — |
+| Signed in | success | 3s | "Signed in as [email]." | — |
+| Signed out | info | 3s | "Signed out." | — |
+| Token re-auth failed | error | manual | "Session expired. Please sign in again." | Sign In |
+| Sync started | info | persistent | "Syncing…" | — |
+| Sync complete | success | 3s | "Sync complete." | — |
+| Sync failed | error | 5s | "Sync failed. Try again." | — |
+| Export downloaded | success | 3s | "Export downloaded." | — |
+
+The persistent sync-started toast is replaced (not stacked) by the sync complete or sync failed toast.
+
+**Do not touch:** Any DB schema, routing config, CategorySelect, or balance indicator logic.
+
+**Acceptance criteria:** Every listed event fires the correct toast. Error toasts require manual close. Three-toast cap enforced. Undo correctly reverses the last save and restores form state. All toasts clear on route change and on sign-out. Sync toasts replace rather than stack.
+
+---
+
+## 14. Open Items (Deferred — Do Not Implement Yet)
 
 - Currency conversion + Forex Gain/Loss tracking
 - Statement ingestion (PDF/CSV parsing)
