@@ -9,6 +9,7 @@ export default function CategorySelect({ value, onChange, placeholder = 'Select 
   const [search, setSearch] = useState('');
   const ref = useRef(null);
   const triggerRef = useRef(null);
+  const inputRef = useRef(null);
 
   useEffect(() => {
     function handleClickOutside(e) {
@@ -19,6 +20,12 @@ export default function CategorySelect({ value, onChange, placeholder = 'Select 
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
+
+  useEffect(() => {
+    if (open) {
+      requestAnimationFrame(() => inputRef.current?.focus());
+    }
+  }, [open]);
 
   const selected = categories.find((c) => c.id === value);
 
@@ -76,6 +83,12 @@ export default function CategorySelect({ value, onChange, placeholder = 'Select 
         ref={triggerRef}
         type="button"
         onClick={() => setOpen(!open)}
+        onKeyDown={(e) => {
+          if (!open && e.key.length === 1 && !e.ctrlKey && !e.metaKey) {
+            setOpen(true);
+            setSearch(e.key);
+          }
+        }}
         className="flex items-center gap-2 px-3 py-2 text-sm bg-surface border border-border rounded-md hover:border-border-strong transition-colors duration-base w-full text-left"
       >
         <span className={`flex-1 truncate ${selected ? 'text-text-primary' : 'text-text-disabled'}`}>
@@ -105,11 +118,11 @@ export default function CategorySelect({ value, onChange, placeholder = 'Select 
                 <line x1="21" y1="21" x2="16.65" y2="16.65" />
               </svg>
               <Command.Input
+                ref={inputRef}
                 value={search}
                 onValueChange={setSearch}
                 placeholder="Search categories..."
                 className="flex-1 px-0 py-2 text-sm bg-transparent outline-none placeholder:text-text-tertiary"
-                autoFocus
               />
             </div>
 
