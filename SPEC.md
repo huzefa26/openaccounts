@@ -1,5 +1,5 @@
 # OpenAccounts — Project Specification
-> **Version:** 1.3 | **Status:** Active
+> **Version:** 1.4 | **Status:** Active
 > This file is the single source of truth for all agent sessions. Read it in full before every session. Update it at the end of every session to reflect decisions made and work completed.
 
 ---
@@ -299,12 +299,12 @@ Parent references are resolved by name during seeding.
   { name: 'Cash',                   type: 'asset' },
   { name: 'Bank Account',           type: 'asset' },
   { name: 'Wallets',                type: 'asset' },
-  { name: 'Accounts Receivable',    type: 'asset' },
+  { name: 'Accounts Receivable',    type: 'asset', description: 'People who owe you money. Create a sub-category for each person.' },
   { name: 'Fixed Assets',           type: 'asset' },
   { name: 'Investments',            type: 'asset' },
   { name: 'Credit Card',            type: 'liability' },
   { name: 'Loans',                  type: 'liability' },
-  { name: 'Accounts Payable',       type: 'liability' },
+  { name: 'Accounts Payable',       type: 'liability', description: 'People you owe money to. Create a sub-category for each person.' },
   { name: 'Income',                 type: 'income' },
   { name: 'Interest Income',        type: 'income' },
   { name: 'General Expenses',       type: 'expense' },
@@ -335,6 +335,12 @@ Parent references are resolved by name during seeding.
 **Nav items (in order):** Home · Ledger · Analytics · Categories · Profile (via avatar photo)
 
 Active route is highlighted on text links. No nested routing.
+
+*Mobile sticky top bar:* Full-width bar at the top of every page on `< md`. Left: current page title. Right: sync icon button reflecting live sync state (spinner while syncing, tick on complete, cross on failure, default when idle). Tapping it triggers an immediate sync, bypassing the debounce timer.
+
+*BottomNav scroll behaviour:* Hides on scroll down, restores on scroll up. Transition: `300ms ease` — not instantaneous. Applies on both Android and iOS. iOS: add `padding-bottom: env(safe-area-inset-bottom)` to clear the system home bar.
+
+*Desktop navbar:* Add a sync icon button (circular arrows) to the right section of the navbar, left of the avatar. Clicking it triggers an immediate sync, bypassing the debounce timer.
 
 ---
 
@@ -368,6 +374,8 @@ On Save: write transaction + all lines to IndexedDB. Update Zustand stores. Rese
 - *Total Receivables:* Net running balance of the `Accounts Receivable` category and all its descendants. Per-currency.
 - *Total Payables:* Net running balance of the `Accounts Payable` category and all its descendants. Per-currency.
 
+Each metric card: when the value is zero or no data exists, display `—` instead of a blank space.
+
 **Recent transactions** — last 5 transactions ordered by `date` desc, then `created_at` desc.
 Each row shows: Date · Description · Per-currency total amounts (debit side).
 
@@ -399,6 +407,8 @@ Each row shows: Date · Description · Per-currency total amounts (debit side).
 
 Multi-line transactions display stacked rows in From/To cells (one sub-row per line).
 
+**Mobile Layout (`< md`):** The table is replaced by a card list. Each transaction card shows Date and Description on the first line, From entries (category · currency · amount) stacked below, To entries stacked below those, and Edit/Delete icons in the top-right corner. Filter bar remains collapsible above. Pagination controls remain below.
+
 **Edit:** Opens the Transaction Form (same as Home page) in a modal or slide-over panel, pre-filled with the transaction's existing data. It includes `CategorySelect` and all keyboard shortcuts by inheritance. On save: update transaction + delete old lines + insert new lines (update `updated_at` on transaction).
 
 **Delete:** Hard delete with a confirmation dialog: *"Delete this transaction? This cannot be undone."* Deletes transaction record and all its lines.
@@ -420,6 +430,8 @@ Multi-line transactions display stacked rows in From/To cells (one sub-row per l
 | Net Balance | Per-currency running balance (§5.3). Shown as a currency-keyed list. Dash for leaf expense/income categories where lifetime totals are not meaningful |
 | Edit | Icon button → Category Form |
 | Delete | Icon button → deletion rules (§5.4) |
+
+**Mobile Layout (`< md`):** The table is replaced by a card list. Each category card shows Name (bold for roots, indented label for children), Opening Balance if non-zero, Net Balance, and Edit/Delete icons. Account type group headers remain as full-width section dividers.
 
 **Category Form (modal):**
 
@@ -451,6 +463,8 @@ On edit where `opening_balance` changed: re-run opening balance logic (§5.2).
 **Currencies**
 - List of active currencies (code + name + symbol)
 - "Add Currency" — opens a searchable dropdown of all currencies (from `baseCurrencies.js`)
+- "Add Currency" button: active press state — `active:scale-95` with `transition-transform`.
+- Currency search popup: solid background, visible border, and `shadow-pop` drop shadow to visually separate it from the page behind it.
 - Delete icon per row (cannot delete the default currency; show tooltip)
 
 **Data & Sync**
@@ -464,6 +478,10 @@ On edit where `opening_balance` changed: re-run opening balance logic (§5.2).
 ### 7.6 Analytics page (`/analytics`)
 
 Placeholder only. Display: "Analytics coming soon." No logic to implement.
+
+### 7.7 Page pre-react-hydrated
+
+Place a CSS spinner inside <div id="root"> in index.html, visible immediately on page load before React hydrates. React's first render replaces it. Style with the app's primary colour.
 
 ---
 
@@ -486,6 +504,8 @@ https://www.googleapis.com/auth/drive.appdata
 ### 8.2 Sign-in requirement
 
 **Sign-in is mandatory.** The app's unauthenticated entry point is a sign-in screen. No part of the app — no form, no ledger, no categories — is accessible until the user has authenticated with Google. There is no guest or offline mode.
+
+If the user dismisses the Google OAuth prompt or denies permissions, do not proceed with initialisation. Show an error state on the sign-in screen: *"Google permissions are required to use OpenAccounts."* with a *"Try again"* button that re-initiates the OAuth flow.
 
 ### 8.3 Post sign-in initialisation
 
@@ -556,6 +576,22 @@ No refresh token — GIS token client does not issue refresh tokens.
 
 **Deletion handling:** Hard-deleted records are absent locally. If a record was deleted locally but still exists remotely with an older `updated_at` timestamp, the local deletion wins and the record is not restored because the remote record's `updated_at` timestamp is older than the last synced `syncStore.lastSynced` timestamp.
 
+### 9.3 Auto sync
+
+Every write (transaction created/updated/deleted, category created/updated/deleted, currency added/removed) schedules an automatic sync with a 30-second debounce. Each new write resets the timer.
+
+`syncStore` gains two new fields:
+- `pendingChangeCount: number` — tracks outstanding unsynced writes. Default `0`.
+- `pendingSyncTimer: ReturnType<typeof setTimeout> | null`
+
+Rules:
+- **Every write:** increment `pendingChangeCount`, call `schedulePendingSync()` (clears old timer, sets 30-second timeout calling `syncEngine.sync()`).
+- **On undo:** decrement `pendingChangeCount` by 1 (floor 0). The undo delete is not a new write — it does not increment the counter and does not call `schedulePendingSync()`. If `pendingChangeCount` reaches `0`: cancel the timer. If `pendingChangeCount > 0`: call `schedulePendingSync()` to reset the 30-second window from now.
+- **Manual sync (navbar or Profile page):** cancel timer, set `pendingChangeCount = 0`, call `syncEngine.sync()` immediately.
+- **Auto sync fires successfully:** set `pendingChangeCount = 0`, clear timer.
+- **Auto sync fails:** do not reset `pendingChangeCount`, do not reschedule. Show error toast. User must retry manually.
+
+
 ---
 
 ## 10. Export
@@ -614,10 +650,12 @@ This migration runs once and never again.
 | 8 | Google Sign-In via GIS token client, token storage, two-check refresh logic, auth state | ✅ Complete |
 | 9 | Google Drive sync engine (pull → merge → push), sync UI on Profile | ✅ Complete |
 | 10 | Navbar restructure: 3-section layout (logo left, nav centered, avatar right), AvatarWithSync shared component with sync overlays (amber ring/badges), full-width no constraint | ✅ Complete |
-| 11 | Monospaced numbers — register `font-numeric` in Tailwind config, apply to all amounts, balances, and dates app-wide | ⏳ Pending |
-| 12 | `CategorySelect` component — searchable combobox built on `cmdk` following the shadcn Command/Combobox pattern; grouped by type, children indented, auto-focus top match, keyboard navigation; replace all category inputs in `TransactionForm` | ⏳ Pending |
-| 13 | Transaction form enhancements — keyboard shortcuts (`Ctrl+S`, `Tab`, `Enter`, `Escape`); zero-balance equality indicator with animation | ⏳ Pending |
-| 14 | Toast notification system — `toastStore`, `Toast`, `ToastContainer`; all event wiring; Undo for transaction save; clear on navigation and sign-out | ⏳ Pending |
+| 11 | Monospaced numbers — register `font-numeric` in Tailwind config, apply to all amounts, balances, and dates app-wide | ✅ Complete |
+| 12 | `CategorySelect` component — searchable combobox built on `cmdk` following the shadcn Command/Combobox pattern; grouped by type, children indented, auto-focus top match, keyboard navigation; replace all category inputs in `TransactionForm` | ✅ Complete |
+| 13 | Transaction form enhancements — keyboard shortcuts (`Ctrl+S`, `Tab`, `Enter`, `Escape`); zero-balance equality indicator with animation | ✅ Complete |
+| 14 | Toast notification system — `toastStore`, `Toast`, `ToastContainer`; all event wiring; Undo for transaction save; clear on navigation and sign-out | ✅ Complete |
+| 15 | Mobile & UX bug fixes — Ledger and Categories card views on mobile; transaction form row widths (CategorySelect `flex-1`, fixed currency + amount widths); date input full width matching other inputs; BottomNav smooth scroll hide/restore with iOS safe-area; mobile sticky top bar layout shell (consumed by Phase 16 for sync wiring); Profile currencies button press animation and popup elevation; Home metrics dash for empty state; Google permissions denied error state and retry; `index.html` first-load spinner; base CoA descriptions for AR and AP | ⏳ Pending |
+| 16 | Auto sync — `syncStore` additions (`pendingChangeCount`, `pendingSyncTimer`, `schedulePendingSync`, `decrementAndMaybeCancel`); wire all DB writes to `schedulePendingSync`; wire undo to `decrementAndMaybeCancel`; manual sync buttons (desktop navbar + mobile top bar) cancel timer and call `syncEngine.sync()` immediately; sync state icon wired to mobile top bar | ⏳ Pending |
 
 ---
 
@@ -723,6 +761,8 @@ One line per currency. Use `font-numeric` for all amounts in this indicator. If 
 
 After a transaction is saved, `transactionStore` stores the full payload of the just-saved transaction + lines as `lastSavedTransaction`. The success toast message is *"Transaction saved"* with an *"Undo"* action link. Clicking Undo: hard-deletes the saved transaction and its lines, restores the form to its pre-save state, dismisses the toast. After 5 seconds: toast auto-dismisses, `lastSavedTransaction` is cleared. No undo is offered for edits or deletes — those are final.
 
+The undo delete operation must not call `schedulePendingSync()` and must not increment `pendingChangeCount`. It must call `syncStore.decrementAndMaybeCancel()` (or equivalent action) instead.
+
 *Event wiring:*
 
 | Event | Type | Duration | Message | Action |
@@ -746,6 +786,156 @@ The persistent sync-started toast is replaced (not stacked) by the sync complete
 **Do not touch:** Any DB schema, routing config, CategorySelect, or balance indicator logic.
 
 **Acceptance criteria:** Every listed event fires the correct toast. Error toasts require manual close. Three-toast cap enforced. Undo correctly reverses the last save and restores form state. All toasts clear on route change and on sign-out. Sync toasts replace rather than stack.
+
+### Phase 15 — Mobile & UX Bug Fixes
+
+**Scope:** `index.html`, `src/constants/baseCoa.js`, `src/components/layout/AppShell.jsx`, `src/components/layout/MobileTopBar.jsx` (new), `src/components/layout/BottomNav.jsx`, `src/components/forms/TransactionForm.jsx`, `src/pages/Home.jsx`, `src/pages/Ledger.jsx`, `src/components/tables/LedgerTable.jsx`, `src/pages/Categories.jsx`, `src/components/tables/CategoryTable.jsx`, `src/pages/Profile.jsx`, sign-in screen component.
+
+**Work:**
+
+*First-load blank screen:*
+Add a CSS spinner inside `<div id="root">` in `index.html`. It must be visible immediately — no JavaScript required to render it. Style it using the app's teal primary colour (`#0D9488`). React's first render replaces the `root` contents, removing the spinner automatically.
+
+*Base CoA descriptions:*
+In `baseCoa.js`, add `description` fields to two entries:
+- Accounts Receivable: `"People who owe you money. Create a sub-category for each person."`
+- Accounts Payable: `"People you owe money to. Create a sub-category for each person."`
+
+*BottomNav — scroll behaviour:*
+Track scroll direction with a `useEffect` event listener on `window`. When the user scrolls down past a 60px threshold from the top, apply a `translate-y-full` transform to hide the BottomNav. When the user scrolls up, remove it. CSS transition on the transform: `duration-300 ease-in-out`. Apply `padding-bottom: env(safe-area-inset-bottom)` to the BottomNav container to clear the iOS system home bar. The 60px threshold prevents the nav from hiding on minor incidental scroll at the top of the page.
+
+*Mobile top bar — layout shell (sync wiring deferred to Phase 16):*
+Create `MobileTopBar.jsx`. Renders only on `< md`. Fixed at the top of the viewport, full width, standard height (`h-14`). Left: current page title derived from `useLocation()` matched against the route map (`/` → "Home", `/ledger` → "Ledger", etc.). Right: a sync icon button (circular arrows). In Phase 15 the sync icon is rendered but not yet wired — it is visually present as a placeholder. Mount `MobileTopBar` in `AppShell.jsx` above the page content on mobile. Add `pt-14` top padding to the page content area on `< md` to prevent content from sitting behind the bar.
+
+*Transaction form — row widths:*
+In `TransactionForm.jsx`, each From/To row container uses `flex items-center gap-2`. Apply:
+- `CategorySelect`: `flex-1 min-w-0` so it takes all remaining space
+- Currency dropdown: fixed `w-24`
+- Amount input: fixed `w-28`
+- Delete row icon: fixed `w-8` (or `shrink-0`)
+
+The `flex-1 min-w-0` on CategorySelect also ensures its dropdown popover inherits an appropriate minimum width rather than collapsing to the trigger's narrow width. Set the popover's `min-w` explicitly to `min-w-[200px]` in `CategorySelect.jsx`.
+
+*Transaction form — date input width:*
+Remove any fixed narrow width from the date input. Apply `w-full` so it matches the full-width behaviour of the Description and Notes inputs.
+
+*Ledger — mobile card view:*
+On `< md`, replace the table with a card list in `LedgerTable.jsx`. Each transaction renders as a card with:
+- First row: Date (`font-numeric`, muted) and Description (semibold), space-between
+- Second row if Notes present: Notes text, truncated to one line, muted and smaller
+- From section label + stacked entries: each entry on its own line as `Category — Currency Amount` (`font-numeric` for amount)
+- To section label + stacked entries: same format
+- Top-right corner of card: Edit icon and Delete icon
+- Cards separated by a subtle divider or gap
+
+The filter bar remains collapsible above the card list. Pagination controls remain below. The desktop table layout is unchanged.
+
+*Categories — mobile card view:*
+On `< md`, replace the table with a card list in `CategoryTable.jsx`. Each category renders as a card with:
+- Name: bold for root categories; for children, a left indent and slightly muted weight
+- Opening Balance: shown inline if non-zero, labelled "Opening:" prefix, `font-numeric`
+- Net Balance: shown per currency, labelled "Balance:" prefix, `font-numeric`; dash if not meaningful
+- Bottom-right: Edit and Delete icon buttons
+- Cards separated by a subtle divider
+
+Account type group headers (Assets, Liabilities, etc.) remain as full-width section labels between groups. The desktop table layout is unchanged.
+
+*Home — metrics empty state:*
+In `Home.jsx` (or `useMetrics.js`), wherever metric values are rendered: if a value is zero or the data set is empty, display `—` in place of any numeric value. Do not leave a blank space.
+
+*Profile — currencies UI:*
+In `Profile.jsx`:
+- "Add Currency" button: add `active:scale-95 transition-transform` classes for a press-down feedback animation.
+- Currency search popup: ensure it has a solid background (`bg-white dark:bg-gray-900` or the app's established surface token), a visible border (`border border-gray-200 dark:border-gray-700`), and a `shadow-pop` drop shadow (consistent with other dropdowns). The popup must not visually merge with the page behind it.
+
+*Google permissions denied:*
+In `googleAuth.js`, inspect the GIS token client callback response. If the response contains `error: 'access_denied'` or if the user closes the OAuth dialog without granting permissions, do not proceed with initialisation. Set an `authError` field in `authStore`. On the sign-in screen, when `authError` is set, display: *"Google permissions are required to use OpenAccounts."* and a *"Try again"* button that clears `authError` and re-initiates `tokenClient.requestAccessToken()`. The app must not reach a blank or partially initialised state.
+
+**Do not touch:** `syncStore`, `syncEngine`, any DB store logic, Navbar (desktop), Phase 11–14 components, Analytics page.
+
+**Acceptance criteria:**
+- A CSS spinner is visible on first page load before React renders
+- Accounts Receivable and Accounts Payable show their descriptions in the Category edit form
+- BottomNav hides smoothly on scroll down and restores on scroll up with a visible transition; does not flicker on minor scroll; clears the iOS home bar
+- Mobile top bar is visible on mobile, shows correct page title per route, and contains a sync icon (non-functional in this phase)
+- CategorySelect takes the majority of row width on mobile; its dropdown is at least 200px wide
+- Date input is full-width, consistent with Description and Notes
+- Ledger shows card layout on mobile; desktop table is unchanged
+- Categories shows card layout on mobile; desktop table is unchanged
+- Home metrics show `—` when values are zero
+- "Add Currency" button visually depresses on tap
+- Currency popup is clearly elevated from the background
+- Denying Google OAuth shows the error message and Try again button; the app does not proceed
+
+---
+
+### Phase 16 — Auto Sync + Mobile Top Bar Wiring
+
+**Scope:** `src/store/syncStore.js`, `src/db/transactions.js`, `src/db/categories.js`, `src/db/currencies.js`, `src/store/transactionStore.js`, `src/components/layout/MobileTopBar.jsx`, `src/components/layout/Navbar.jsx`, `src/pages/Profile.jsx`.
+
+**Work:**
+
+*syncStore additions:*
+Add the following to `syncStore.js`:
+
+```
+pendingChangeCount: number         // default 0
+pendingSyncTimer: timeout | null   // default null
+
+schedulePendingSync()
+  — clears pendingSyncTimer if set
+  — sets a new 30-second timeout that calls syncEngine.sync()
+  — stores the timeout reference in pendingSyncTimer
+
+decrementAndMaybeCancel()
+  — decrements pendingChangeCount by 1, floor at 0
+  — if pendingChangeCount reaches 0: clears pendingSyncTimer, sets it to null
+  — if pendingChangeCount > 0: calls schedulePendingSync() to reset the 30-second window
+
+syncNow()
+  — clears pendingSyncTimer, sets it to null
+  — sets pendingChangeCount to 0
+  — calls syncEngine.sync() immediately
+```
+
+On successful auto or manual sync completion: set `pendingChangeCount = 0`, clear `pendingSyncTimer`.
+On sync failure: do not reset `pendingChangeCount`, do not reschedule. Existing error toast handles user feedback.
+
+*Wire all DB writes:*
+After every successful write in `db/transactions.js`, `db/categories.js`, and `db/currencies.js`, call `syncStore.getState().schedulePendingSync()` and increment `pendingChangeCount` by 1 before calling `schedulePendingSync`. Specifically:
+- `createTransaction`, `updateTransaction`, `deleteTransaction`
+- `createCategory`, `updateCategory`, `deleteCategory`
+- `addCurrency`, `removeCurrency`, `setDefaultCurrency`
+
+*Wire undo to decrementAndMaybeCancel:*
+In `transactionStore.js`, the undo operation hard-deletes the saved transaction and its lines directly via the DB layer — bypassing the normal `deleteTransaction` write path so it does not call `schedulePendingSync`. After the undo delete completes, call `syncStore.getState().decrementAndMaybeCancel()`.
+
+*Manual sync buttons:*
+- **Desktop navbar** (`Navbar.jsx`): add a sync icon button (circular arrows) to the right section, left of the avatar. `onClick` calls `syncStore.getState().syncNow()`.
+- **Mobile top bar** (`MobileTopBar.jsx`): wire the existing sync icon button placeholder to `syncStore.getState().syncNow()`.
+- **Profile page** (`Profile.jsx`): the existing "Sync with Google Drive" button calls `syncStore.getState().syncNow()` instead of calling `syncEngine.sync()` directly.
+
+*Sync state display:*
+Both the desktop navbar avatar (existing) and the mobile top bar sync icon (new) must reflect live sync state from `syncStore`:
+- `syncStatus === 'syncing'`: spinner animation on the icon
+- `syncStatus === 'success'`: tick/check icon, revert to default after 3 seconds
+- `syncStatus === 'error'`: cross icon, persists until next sync attempt
+- `syncStatus === 'idle'`: default circular arrows icon
+
+`MobileTopBar.jsx` reads `syncStore.syncStatus` and applies the appropriate icon and animation class, consistent with the existing avatar behaviour.
+
+**Do not touch:** Any IndexedDB schema, `syncEngine.js` internals (only its `sync()` entry point is called), Phase 11–14 components, Categories or Ledger layout, any page content outside the navbar and top bar.
+
+**Acceptance criteria:**
+- Saving a transaction triggers an auto sync after 30 seconds of no further writes
+- Saving a second transaction within 30 seconds of the first resets the timer; only one sync fires
+- Pressing Undo after a save cancels the pending sync if no other writes exist; if other writes exist, the timer continues
+- Pressing any manual sync button triggers sync immediately and cancels any pending timer
+- After a successful manual or auto sync, `pendingChangeCount` is `0` and no timer is active
+- After a failed sync, `pendingChangeCount` is unchanged and no auto-retry fires
+- Mobile top bar sync icon shows spinner during sync, tick on success, cross on failure
+- Desktop navbar sync button behaves identically to the Profile page sync button
+- The undo delete path does not schedule a new sync
 
 ---
 
