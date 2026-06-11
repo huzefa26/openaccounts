@@ -576,7 +576,7 @@ Triggered by the post sign-in initialisation check (§8.3) finding no `openaccou
 All of the following is executed as a **single atomic IndexedDB transaction**. If the transaction aborts for any reason, nothing is written and the process retries on the next sign-in.
 
 1. Insert the 22 base categories from §6. Base CoA IDs use the `base_${slug}` format. Parents are inserted before children; parent references resolved by name.
-2. Insert default currency: `{ code: 'AED', name: 'UAE Dirham', symbol: 'د.إ', is_default: true }`.
+2. Insert base currencies from the file `src/constants/baseCurrencies.js`.
 3. Set `settings.theme = 'light'`.
 
 After the transaction commits, push the seeded data to Drive immediately.

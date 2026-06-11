@@ -1,4 +1,5 @@
 import { baseCoa } from '../constants/baseCoa';
+import { baseCurrencies } from '../constants/baseCurrencies';
 
 function slugify(name) {
   return name
@@ -34,14 +35,16 @@ export async function seedFirstRun(db) {
   }
 
   const curStore = tx.objectStore('currencies');
-  await curStore.put({
-    code: 'AED',
-    name: 'UAE Dirham',
-    symbol: 'د.إ',
-    is_default: true,
-    created_at: now,
-    updated_at: now,
-  });
+  for (const curr of baseCurrencies){
+    await curStore.put({
+      code: curr.code,
+      name: curr.name,
+      symbol: curr.symbol ?? curr.code,
+      is_default: curr.is_default ?? false,
+      created_at: now,
+      updated_at: now,
+    });
+  }
 
   const setStore = tx.objectStore('settings');
   await setStore.put({
