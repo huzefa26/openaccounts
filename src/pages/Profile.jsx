@@ -347,7 +347,7 @@ export default function Profile() {
               </p>
               {authStore.isSignedIn ? (
                 <Button
-                  onClick={() => syncStore.runSync()}
+                  onClick={() => syncStore.syncNow()}
                   disabled={syncStore.status === 'syncing'}
                 >
                   {syncStore.status === 'syncing' ? 'Syncing...' : 'Sync with Google Drive'}
