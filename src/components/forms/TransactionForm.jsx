@@ -212,7 +212,7 @@ export default function TransactionForm({ initialTransaction, initialLines, onSu
     return (
       <div className="flex flex-col gap-2">
         {rows.map((row, index) => (
-          <div key={row.id} data-row-id={row.id} className="flex items-start gap-2">
+          <div key={row.id} data-row-id={row.id} className="flex flex-col md:flex-row md:items-start gap-2">
             <div className="flex-1 min-w-0">
               <CategorySelect
                 value={row.categoryId}
@@ -221,40 +221,42 @@ export default function TransactionForm({ initialTransaction, initialLines, onSu
                 placeholder="Select category"
               />
             </div>
-            <div className="w-24 flex-shrink-0">
-              <Select
-                name={`${side}-currency-${index}`}
-                value={row.currency}
-                onChange={(e) => updateRow(side, row.id, 'currency', e.target.value)}
-                options={currencies.map((c) => ({ value: c.code, label: c.code }))}
-              />
+            <div className="flex items-start gap-2">
+              <div className="w-24 flex-shrink-0">
+                <Select
+                  name={`${side}-currency-${index}`}
+                  value={row.currency}
+                  onChange={(e) => updateRow(side, row.id, 'currency', e.target.value)}
+                  options={currencies.map((c) => ({ value: c.code, label: c.code }))}
+                />
+              </div>
+              <div className="w-28 flex-shrink-0">
+                <Input
+                  name={`${side}-amount-${index}`}
+                  type="number"
+                  value={row.amount}
+                  onChange={(e) => updateRow(side, row.id, 'amount', e.target.value)}
+                  placeholder="0.00"
+                  className="font-numeric"
+                />
+              </div>
+              <button
+                type="button"
+                onClick={() => deleteRow(side, row.id)}
+                disabled={rows.length <= 1}
+                className={`inline-flex items-center justify-center w-8 h-8 rounded-md transition-colors duration-base flex-shrink-0 ${
+                  rows.length <= 1
+                    ? 'text-text-disabled cursor-not-allowed'
+                    : 'text-text-tertiary hover:text-expense hover:bg-expense-bg'
+                }`}
+                aria-label={`Delete ${side} row`}
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="18" y1="6" x2="6" y2="18" />
+                  <line x1="6" y1="6" x2="18" y2="18" />
+                </svg>
+              </button>
             </div>
-            <div className="w-28 flex-shrink-0">
-              <Input
-                name={`${side}-amount-${index}`}
-                type="number"
-                value={row.amount}
-                onChange={(e) => updateRow(side, row.id, 'amount', e.target.value)}
-                placeholder="0.00"
-                className="font-numeric"
-              />
-            </div>
-            <button
-              type="button"
-              onClick={() => deleteRow(side, row.id)}
-              disabled={rows.length <= 1}
-              className={`inline-flex items-center justify-center w-8 h-8 rounded-md transition-colors duration-base flex-shrink-0 ${
-                rows.length <= 1
-                  ? 'text-text-disabled cursor-not-allowed'
-                  : 'text-text-tertiary hover:text-expense hover:bg-expense-bg'
-              }`}
-              aria-label={`Delete ${side} row`}
-            >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <line x1="18" y1="6" x2="6" y2="18" />
-                <line x1="6" y1="6" x2="18" y2="18" />
-              </svg>
-            </button>
           </div>
         ))}
         <button
