@@ -229,7 +229,7 @@ export default function TransactionForm({ initialTransaction, initialLines, onSu
                 options={currencies.map((c) => ({ value: c.code, label: c.code }))}
               />
             </div>
-            <div className="w-32 flex-shrink-0">
+            <div className="w-28 flex-shrink-0">
               <Input
                 name={`${side}-amount-${index}`}
                 type="number"
@@ -358,6 +358,7 @@ export default function TransactionForm({ initialTransaction, initialLines, onSu
         type="date"
         value={date}
         onChange={(e) => setDate(e.target.value)}
+        className="w-full"
       />
       <Input
         label="Description"
