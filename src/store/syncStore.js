@@ -10,6 +10,8 @@ const useSyncStore = create((set, get) => ({
   status: 'idle',
   lastSynced: null,
   error: null,
+  pendingChangeCount: 0,
+  pendingSyncTimer: null,
 
   loadLastSynced: async () => {
     try {
@@ -18,6 +20,24 @@ const useSyncStore = create((set, get) => ({
     } catch {
       // non-fatal
     }
+  },
+
+  schedulePendingSync: () => {
+    const { pendingSyncTimer } = get();
+    if (pendingSyncTimer) clearTimeout(pendingSyncTimer);
+
+    const timer = setTimeout(async () => {
+      await get().runSync();
+
+      if (get().pendingSyncTimer === timer) {
+        set(({ status, pendingChangeCount }) => ({
+          pendingSyncTimer: null,
+          pendingChangeCount: status === 'idle' ? 0 : pendingChangeCount,
+        }));
+      }
+    }, 30000);
+
+    set({ pendingSyncTimer: timer });
   },
 
   runSync: async () => {
