@@ -54,7 +54,7 @@ export default function LedgerTable({
 
   return (
     <div className="border border-border rounded-lg overflow-hidden">
-      <table className="w-full">
+      <table className="w-full hidden md:table">
         <thead>
           <tr className="border-b border-border bg-bg">
             <th scope="col" className="py-2.5 px-3 text-left text-xs font-semibold text-text-secondary uppercase tracking-wider w-24">Date</th>
@@ -155,6 +155,77 @@ export default function LedgerTable({
           })}
         </tbody>
       </table>
+
+      <div className="block md:hidden divide-y divide-border">
+        {transactions.map((tx) => {
+          const txLines = linesByTx[tx.id] || [];
+          const credits = txLines.filter((l) => l.entry_type === 'credit');
+          const debits = txLines.filter((l) => l.entry_type === 'debit');
+          const isDeleting = deletingId === tx.id;
+
+          return (
+            <div key={tx.id} className={`relative p-4 ${isDeleting ? 'bg-expense-bg' : ''}`}>
+              <div className="flex items-start justify-between gap-2">
+                <div className="flex items-center gap-2 min-w-0">
+                  <span className="text-xs font-numeric text-text-tertiary whitespace-nowrap">{tx.date}</span>
+                  <span className="text-sm font-semibold text-text-primary truncate">{tx.description}</span>
+                </div>
+                <div className="flex items-center gap-1 flex-shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => onEdit(tx, txLines)}
+                    className="inline-flex items-center justify-center w-8 h-8 rounded-md text-text-tertiary hover:text-text-primary hover:bg-accent-light transition-colors duration-base"
+                    aria-label={`Edit transaction ${tx.description}`}
+                  >
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" />
+                      <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" />
+                    </svg>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => { isDeleting ? setDeletingId(null) : setDeletingId(tx.id); }}
+                    className="inline-flex items-center justify-center w-8 h-8 rounded-md text-text-tertiary hover:text-expense hover:bg-expense-bg transition-colors duration-base"
+                    aria-label={`Delete transaction ${tx.description}`}
+                  >
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="3 6 5 6 21 6" />
+                      <path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+              {tx.notes && (
+                <p className="text-xs text-text-tertiary mt-1 truncate">{tx.notes}</p>
+              )}
+              {credits.length > 0 && (
+                <div className="mt-2">
+                  <span className="text-xs font-medium text-text-secondary">From (credits)</span>
+                  {credits.map((l) => (
+                    <div key={l.id} className="flex items-center text-sm mt-0.5">
+                      <span className="text-text-primary truncate flex-1 min-w-0">{catName(categories, l.category_id)}</span>
+                      <span className="text-income font-numeric text-right w-24 flex-shrink-0">{formatAmount(l.amount)}</span>
+                      <span className="text-text-tertiary text-xs font-numeric text-right w-10 flex-shrink-0 ml-0.5">{l.currency}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+              {debits.length > 0 && (
+                <div className="mt-2">
+                  <span className="text-xs font-medium text-text-secondary">To (debits)</span>
+                  {debits.map((l) => (
+                    <div key={l.id} className="flex items-center text-sm mt-0.5">
+                      <span className="text-text-primary truncate flex-1 min-w-0">{catName(categories, l.category_id)}</span>
+                      <span className="text-expense font-numeric text-right w-24 flex-shrink-0">{formatAmount(l.amount)}</span>
+                      <span className="text-text-tertiary text-xs font-numeric text-right w-10 flex-shrink-0 ml-0.5">{l.currency}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
 
       {totalPages > 1 && (
         <div className="flex items-center justify-between px-4 py-3 border-t border-border bg-bg text-sm">
