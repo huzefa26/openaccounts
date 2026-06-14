@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import useCategoryStore from '../store/categoryStore';
 import useTransactionStore from '../store/transactionStore';
 import useToastStore from '../store/toastStore';
+import useBalance from '../hooks/useBalance';
 import CategoryRow from '../components/tables/CategoryRow';
 import CategoryForm from '../components/forms/CategoryForm';
 
@@ -65,6 +66,75 @@ export default function Categories() {
     );
   }
 
+  function CategoryCard({ category, depth }) {
+    const balance = useBalance(category.id);
+    const indent = depth * 20;
+
+    const balanceDisplay = Object.keys(balance).length > 0
+      ? Object.entries(balance)
+          .map(([currency, amount]) => `${Number(amount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${currency}`)
+          .join(', ')
+      : '—';
+
+    return (
+      <div className="flex items-start justify-between gap-2 px-4 py-3">
+        <div className="flex-1 min-w-0" style={{ marginLeft: `${indent}px` }}>
+          <p className={`text-sm ${depth === 0 ? 'font-semibold text-text-primary' : 'text-text-secondary'}`}>
+            {category.name}
+          </p>
+          <div className="flex flex-wrap gap-x-3 gap-y-0.5 mt-0.5">
+            {category.opening_balance ? (
+              <span className="text-xs text-text-tertiary font-numeric">
+                Opening: {Number(category.opening_balance).toLocaleString()}
+              </span>
+            ) : null}
+            <span className="text-xs text-text-tertiary font-numeric">
+              Balance: {balanceDisplay}
+            </span>
+          </div>
+        </div>
+        <div className="flex items-center gap-1 flex-shrink-0">
+          {!category.is_system && (
+            <>
+              <button
+                onClick={() => { setEditingCategory(category); setShowForm(true); }}
+                className="inline-flex items-center justify-center w-8 h-8 rounded-md text-text-tertiary hover:text-text-primary hover:bg-accent-light transition-colors duration-base"
+                aria-label={`Edit ${category.name}`}
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" />
+                  <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" />
+                </svg>
+              </button>
+              <button
+                onClick={() => { setDeletingId(category.id); setDeleteError(null); }}
+                className="inline-flex items-center justify-center w-8 h-8 rounded-md text-text-tertiary hover:text-expense hover:bg-expense-bg transition-colors duration-base"
+                aria-label={`Delete ${category.name}`}
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="3 6 5 6 21 6" />
+                  <path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2" />
+                </svg>
+              </button>
+            </>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  function renderCategoryCard(cat, depth = 0) {
+    const children = childrenMap[cat.id] || [];
+    return (
+      <div key={cat.id}>
+        <CategoryCard category={cat} depth={depth} />
+        {children
+          .sort((a, b) => a.name.localeCompare(b.name))
+          .map((child) => renderCategoryCard(child, depth + 1))}
+      </div>
+    );
+  }
+
   async function handleDelete(id) {
     const store = useCategoryStore.getState();
     const cat = store.categories.find((c) => c.id === id);
@@ -124,7 +194,7 @@ export default function Categories() {
       </div>
 
       <div className="border border-border rounded-lg overflow-hidden">
-        <table className="w-full">
+        <table className="w-full hidden md:table">
           <thead>
             <tr className="border-b border-border bg-bg">
               <th className="py-2.5 px-4 text-left text-xs font-semibold text-text-secondary uppercase tracking-wider">Name</th>
@@ -181,6 +251,49 @@ export default function Categories() {
             )}
           </tbody>
         </table>
+
+        <div className="block md:hidden divide-y divide-border">
+          {TYPE_ORDER.map((type) => {
+            const typeCategories = grouped[type];
+            if (!typeCategories || typeCategories.length === 0) return null;
+            return (
+              <div key={type}>
+                <div className="px-4 py-2 bg-bg border-b border-border">
+                  <button
+                    type="button"
+                    onClick={() => toggleType(type)}
+                    className="flex items-center gap-2 w-full text-left text-xs font-semibold text-text-secondary uppercase tracking-wider"
+                  >
+                    <svg
+                      width="12"
+                      height="12"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2.5"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      className={`transition-transform duration-base ${
+                        collapsedTypes.has(type) ? '-rotate-90' : 'rotate-0'
+                      }`}
+                    >
+                      <polyline points="6 9 12 15 18 9" />
+                    </svg>
+                    {TYPE_LABELS[type]}
+                  </button>
+                </div>
+                {!collapsedTypes.has(type) && typeCategories
+                  .sort((a, b) => a.name.localeCompare(b.name))
+                  .map((cat) => renderCategoryCard(cat))}
+              </div>
+            );
+          })}
+          {roots.length === 0 && (
+            <div className="py-8 text-center text-sm text-text-tertiary">
+              No categories yet.
+            </div>
+          )}
+        </div>
       </div>
 
       {deletingId && (
