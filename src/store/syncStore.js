@@ -71,6 +71,42 @@ const useSyncStore = create((set, get) => ({
     }
   },
 
+  decrementAndMaybeCancel: () => {
+    const { pendingChangeCount, pendingSyncTimer } = get();
+    const newCount = Math.max(0, pendingChangeCount - 1);
+
+    if (newCount === 0) {
+      if (pendingSyncTimer) clearTimeout(pendingSyncTimer);
+      set({ pendingChangeCount: 0, pendingSyncTimer: null });
+      return;
+    }
+
+    if (pendingSyncTimer) clearTimeout(pendingSyncTimer);
+
+    const timer = setTimeout(async () => {
+      await get().runSync();
+
+      if (get().pendingSyncTimer === timer) {
+        set(({ status, pendingChangeCount }) => ({
+          pendingSyncTimer: null,
+          pendingChangeCount: status === 'idle' ? 0 : pendingChangeCount,
+        }));
+      }
+    }, 30000);
+
+    set({ pendingChangeCount: newCount, pendingSyncTimer: timer });
+  },
+
+  syncNow: async () => {
+    if (get().status === 'syncing') return;
+
+    const { pendingSyncTimer } = get();
+    if (pendingSyncTimer) clearTimeout(pendingSyncTimer);
+
+    set({ pendingChangeCount: 0, pendingSyncTimer: null });
+    await get().runSync();
+  },
+
   clearError: () => set({ error: null }),
 }));
 
