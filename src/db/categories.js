@@ -1,5 +1,12 @@
 import { dbPromise } from './index';
 
+async function maybeScheduleSync(suppressSync) {
+  if (suppressSync) return;
+  const { default: useSyncStore } = await import('../store/syncStore');
+  useSyncStore.setState((s) => ({ pendingChangeCount: s.pendingChangeCount + 1 }));
+  useSyncStore.getState().schedulePendingSync();
+}
+
 export async function getAll() {
   const db = await dbPromise;
   return db.getAll('categories');
@@ -26,17 +33,18 @@ async function assertUniqueName(db, name, excludeId) {
   }
 }
 
-export async function create(data) {
+export async function create(data, { suppressSync = false } = {}) {
   const db = await dbPromise;
   await assertUniqueName(db, data.name);
   const id = crypto.randomUUID();
   const now = new Date().toISOString();
   const record = { ...data, id, created_at: now, updated_at: now };
   await db.add('categories', record);
+  await maybeScheduleSync(suppressSync);
   return record;
 }
 
-export async function update(id, data) {
+export async function update(id, data, { suppressSync = false } = {}) {
   const db = await dbPromise;
   const existing = await db.get('categories', id);
   if (!existing) throw new Error('Category not found');
@@ -46,12 +54,14 @@ export async function update(id, data) {
   }
   const updated = { ...existing, ...data, id, updated_at: new Date().toISOString() };
   await db.put('categories', updated);
+  await maybeScheduleSync(suppressSync);
   return updated;
 }
 
-export async function del(id) {
+export async function del(id, { suppressSync = false } = {}) {
   const db = await dbPromise;
   const existing = await db.get('categories', id);
   if (existing?.is_system) throw new Error('System categories cannot be deleted');
   await db.delete('categories', id);
+  await maybeScheduleSync(suppressSync);
 }
