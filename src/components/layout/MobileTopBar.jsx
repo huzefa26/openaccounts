@@ -40,6 +40,7 @@ function SyncIcon() {
 
 export default function MobileTopBar() {
   const location = useLocation();
+  const { syncNow } = useSyncStore();
 
   const title = useMemo(() => {
     return ROUTE_TITLES[location.pathname] || 'OpenAccounts';
@@ -50,6 +51,7 @@ export default function MobileTopBar() {
       <h1 className="text-base font-semibold text-text-primary">{title}</h1>
       <button
         type="button"
+        onClick={() => syncNow()}
         className="inline-flex items-center justify-center w-9 h-9 rounded-md hover:bg-accent-light transition-colors duration-base"
         aria-label="Sync"
       >
