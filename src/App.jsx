@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import useAuthStore from './store/authStore';
+import useSyncStore from './store/syncStore';
 import AppShell from './components/layout/AppShell';
 import SignInScreen from './pages/SignInScreen';
 import AppInit from './components/layout/AppInit';
@@ -10,6 +11,19 @@ import Analytics from './pages/Analytics';
 import Categories from './pages/Categories';
 import Profile from './pages/Profile';
 import ToastContainer from './components/ui/ToastContainer';
+
+function useSyncOnHide() {
+  useEffect(() => {
+    function handleVisibility() {
+      if (document.hidden) {
+        const { pendingChangeCount, syncNow } = useSyncStore.getState();
+        if (pendingChangeCount > 0) syncNow();
+      }
+    }
+    document.addEventListener('visibilitychange', handleVisibility);
+    return () => document.removeEventListener('visibilitychange', handleVisibility);
+  }, []);
+}
 
 function LoadingScreen() {
   return (
@@ -24,6 +38,8 @@ function LoadingScreen() {
 
 export default function App() {
   const { isSignedIn, booting, dbInitialized, verifySession, setDbInitialized } = useAuthStore();
+
+  useSyncOnHide();
 
   useEffect(() => {
     if (booting) {
