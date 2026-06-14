@@ -55,7 +55,9 @@ const useTransactionStore = create((set, get) => ({
           const { transaction, lines } = state.lastSavedTransaction || {};
           if (transaction && lines) {
             await dbLines.deleteByTransactionId(transaction.id);
-            await dbTransactions.del(transaction.id);
+            await dbTransactions.del(transaction.id, { suppressSync: true });
+            const { default: useSyncStore } = await import('./syncStore');
+            useSyncStore.getState().decrementAndMaybeCancel();
             set((s) => ({
               transactions: s.transactions.filter((t) => t.id !== transaction.id),
               lines: s.lines.filter((l) => l.transaction_id !== transaction.id),
