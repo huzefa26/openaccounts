@@ -1,3 +1,4 @@
+import { useRef, useEffect, useState } from 'react';
 import { NavLink } from 'react-router-dom';
 import useAuthStore from '../../store/authStore';
 import AvatarWithSync from './AvatarWithSync';
@@ -22,9 +23,29 @@ function BottomNavItem({ path, label, children }) {
 
 export default function BottomNav() {
   const { user } = useAuthStore();
+  const [hidden, setHidden] = useState(false);
+  const lastScrollY = useRef(0);
+
+  useEffect(() => {
+    function handleScroll() {
+      const currentY = window.scrollY;
+      if (currentY > 60 && currentY > lastScrollY.current) {
+        setHidden(true);
+      } else if (currentY < lastScrollY.current) {
+        setHidden(false);
+      }
+      lastScrollY.current = currentY;
+    }
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   return (
-    <nav className="flex md:hidden items-center justify-around px-2 h-16 border-t border-border bg-surface fixed bottom-0 inset-x-0 z-40">
+    <nav
+      className={`flex md:hidden items-center justify-around px-2 h-16 border-t border-border bg-surface fixed bottom-0 inset-x-0 z-40 transition-transform duration-300 ease-in-out pb-[env(safe-area-inset-bottom)] ${
+        hidden ? 'translate-y-full' : 'translate-y-0'
+      }`}
+    >
       <BottomNavItem path="/" label="Home">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <path d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
