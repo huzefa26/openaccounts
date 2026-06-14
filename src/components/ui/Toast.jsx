@@ -53,6 +53,8 @@ export default function Toast({ toast, onDismiss }) {
 
       <div className="flex-1 min-w-0">
         <p className="text-text-primary">{toast.message}</p>
+        {/* Undo button disabled until auto-sync compatibility is validated.
+             The action payload is preserved in transactionStore for future re-enablement.
         {toast.action && (
           <button
             type="button"
@@ -61,7 +63,7 @@ export default function Toast({ toast, onDismiss }) {
           >
             {toast.action.label}
           </button>
-        )}
+        )} */}
       </div>
 
       <button

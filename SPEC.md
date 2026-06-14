@@ -661,7 +661,29 @@ This migration runs once and never again.
 
 ---
 
-## 13. Next Phases (planned)
+## 13. Known Issues
+
+Bugs and regressions identified during Phase 15 testing. These are tracked for resolution but are not blocking.
+
+| # | Issue | Priority | Notes |
+|---|-------|----------|-------|
+| 1 | BottomNav scroll janky on Android | Medium | Hide/restore transition not smooth — investigate `passive` scroll handler timing |
+| 2 | BottomNav iOS safe area when hidden | Medium | When BottomNav hides, verify `env(safe-area-inset-bottom)` still prevents system bar overlap |
+| 3 | Drive API 403 — insufficient auth scopes | High | "Try Again" on 403 leads to dead end. Need to detect 403, clear token, and re-initiate OAuth with full scopes |
+| 4 | Categories console warning — missing `key` prop | Low | `Fragment <>` usage in `Categories.jsx` list rendering without keys |
+| 5 | "Add Currency" visible when all currencies added | Low | Hide or disable the button when no currencies remain in `baseCurrencies.js` |
+| 6 | Toast appears above BottomNav | Medium | `ToastContainer` fixed positioning conflicts with `BottomNav` on mobile |
+| 7 | Profile reset modal overlay not dimming | Low | Nested modals during reset flow may not apply `bg-overlay` correctly |
+| 8 | Avatar sync ring animation visual polish | Low | Spinning ring on `AvatarWithSync` during sync — consider less prominent treatment |
+| 9 | Profile image broken on re-navigation | Medium | Image fails to load after navigating away and back; investigate `referrerpolicy` or cache behaviour |
+| 10 | "Add Row" button retains `:focus` on mobile | Low | After tapping "Add Row", the button stays visually focused; use `:focus-visible` |
+| 11 | Delete button alignment on mobile | Low | Push delete button to far-right of line 2 with a flex spacer |
+| 12 | Categories "New Category" button placement on mobile | Medium | Move to full-width fixed bottom position on mobile; keep top-right on desktop |
+| 13 | Undo (transaction save) disabled | Low | Button hidden in Toast. Backend logic (`lastSavedTransaction`, 5s auto-clear) kept intact. Re-enable once auto-sync compatibility is validated: (1) undo must not schedule a sync, (2) undo must correctly decrement `pendingChangeCount`, (3) undo must restore form state without data races |
+
+---
+
+## 14. Next Phases (planned)
 
 ### Phase 11 — Monospaced numbers
 
@@ -940,7 +962,7 @@ Both the desktop navbar avatar (existing) and the mobile top bar sync icon (new)
 
 ---
 
-## 14. Open Items (Deferred — Do Not Implement Yet)
+## 15. Open Items (Deferred — Do Not Implement Yet)
 
 - Currency conversion + Forex Gain/Loss tracking
 - Statement ingestion (PDF/CSV parsing)
@@ -948,5 +970,8 @@ Both the desktop navbar avatar (existing) and the mobile top bar sync icon (new)
 - Analytics page (charts and stats)
 - Investment current-value tracking
 - Multi-user / shared access
+- User-defined currencies — allow adding currencies not present in `baseCurrencies.js`
+- Person-to-person splits and transfers with Accounts Payable/Receivable tracking
+- Multi-tab safety — handle account switching across tabs without data corruption
 
 ---
