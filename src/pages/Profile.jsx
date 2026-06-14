@@ -35,7 +35,7 @@ function AccountSection() {
             <img
               src={user.picture}
               alt={`${user.name}'s profile`}
-              referrerpolicy="no-referrer"
+              referrerPolicy="no-referrer"
               className="w-9 h-9 rounded-full border border-border"
             />
           )}
