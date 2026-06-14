@@ -312,8 +312,7 @@ export default function Profile() {
 
   return (
     <div className="p-6 max-w-2xl mx-auto">
-      <h1 className="text-xl font-semibold text-text-primary mb-6">Profile</h1>
-
+      <div className="h-4" />
       <div className="flex flex-col gap-6">
         <AccountSection />
 

@@ -109,8 +109,7 @@ export default function Home() {
 
   return (
     <div className="p-6 max-w-4xl mx-auto">
-      <h1 className="text-xl font-semibold text-text-primary mb-6">Home</h1>
-
+      <div className="h-4" />
       <TransactionForm />
 
       <div className="flex flex-wrap gap-4 mt-8 mb-8">
