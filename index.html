@@ -15,9 +15,31 @@
       rel="stylesheet"
     />
     <script src="https://accounts.google.com/gsi/client" async defer></script>
+    <style>
+      #initial-loader {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 100vh;
+      }
+      #initial-loader::after {
+        content: '';
+        width: 32px;
+        height: 32px;
+        border: 2px solid #0D9488;
+        border-top-color: transparent;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+      }
+      @keyframes spin {
+        to { transform: rotate(360deg); }
+      }
+    </style>
   </head>
   <body class="bg-bg text-text-primary font-ui antialiased">
-    <div id="root"></div>
+    <div id="root">
+      <div id="initial-loader" />
+    </div>
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>
