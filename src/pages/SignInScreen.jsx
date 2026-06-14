@@ -2,7 +2,7 @@ import useAuthStore from '../store/authStore';
 import Button from '../components/ui/Button';
 
 export default function SignInScreen() {
-  const { signIn, loading, error, clearError } = useAuthStore();
+  const { signIn, loading, error, authError, clearError, clearAuthError } = useAuthStore();
 
   return (
     <div className="min-h-screen bg-bg flex items-center justify-center p-6">
@@ -18,6 +18,20 @@ export default function SignInScreen() {
           </p>
         </div>
 
+        {authError && (
+          <div className="mb-4 p-3 bg-expense-bg border border-expense rounded-md">
+            <p className="text-sm text-expense mb-2">{authError}</p>
+            <button
+              type="button"
+              onClick={() => { clearAuthError(); signIn(); }}
+              disabled={loading}
+              className="text-sm font-medium text-accent hover:text-accent-hover transition-colors duration-base"
+            >
+              Try again
+            </button>
+          </div>
+        )}
+
         {error && (
           <div className="mb-4 p-3 bg-expense-bg border border-expense rounded-md">
             <p className="text-sm text-expense">{error}</p>
@@ -26,7 +40,7 @@ export default function SignInScreen() {
 
         <div className="flex justify-center">
           <Button
-            onClick={() => { clearError(); signIn(); }}
+            onClick={() => { clearError(); clearAuthError(); signIn(); }}
             disabled={loading}
             className="w-full"
           >

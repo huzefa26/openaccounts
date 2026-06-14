@@ -13,10 +13,11 @@ const useAuthStore = create((set) => {
     loading: false,
     booting: Boolean(session),
     error: null,
+    authError: null,
     dbInitialized: false,
 
     signIn: async () => {
-      set({ loading: true, error: null });
+      set({ loading: true, error: null, authError: null });
       try {
         const result = await googleAuth.signIn();
         set({
@@ -27,6 +28,7 @@ const useAuthStore = create((set) => {
           loading: false,
           booting: false,
           error: null,
+          authError: null,
         });
         useToastStore.getState().addToast({
           message: `Signed in as ${result.user.email}.`,
@@ -34,11 +36,19 @@ const useAuthStore = create((set) => {
           duration: 3000,
         });
       } catch (err) {
-        set({
-          loading: false,
-          booting: false,
-          error: err.message,
-        });
+        if (err.message === 'ACCESS_DENIED') {
+          set({
+            loading: false,
+            booting: false,
+            authError: 'Google permissions are required to use OpenAccounts.',
+          });
+        } else {
+          set({
+            loading: false,
+            booting: false,
+            error: err.message,
+          });
+        }
       }
     },
 
@@ -87,6 +97,8 @@ const useAuthStore = create((set) => {
     setDbInitialized: () => set({ dbInitialized: true }),
 
     clearError: () => set({ error: null }),
+
+    clearAuthError: () => set({ authError: null }),
   };
 });
 

@@ -66,7 +66,11 @@ export async function signIn() {
       scope: SCOPES,
       callback: async (response) => {
         if (response.error) {
-          reject(new Error(response.error_description || response.error));
+          if (response.error === 'access_denied') {
+            reject(new Error('ACCESS_DENIED'));
+          } else {
+            reject(new Error(response.error_description || response.error));
+          }
           return;
         }
         try {
@@ -82,7 +86,7 @@ export async function signIn() {
       },
       error_callback: (err) => {
         if (err.type === 'popup_closed') {
-          reject(new Error('Sign-in cancelled'));
+          reject(new Error('ACCESS_DENIED'));
         } else {
           reject(new Error(err.type || 'Authorization failed'));
         }
