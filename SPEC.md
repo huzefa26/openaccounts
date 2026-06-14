@@ -1,5 +1,5 @@
 # OpenAccounts — Project Specification
-> **Version:** 1.4 | **Status:** Active
+> **Version:** 1.5 | **Status:** Active
 > This file is the single source of truth for all agent sessions. Read it in full before every session. Update it at the end of every session to reflect decisions made and work completed.
 
 ---
@@ -359,6 +359,8 @@ Active route is highlighted on text links. No nested routing.
 | Notes | Textarea | Optional |
 | Save | Button | Disabled until per-currency invariant is met |
 
+On mobile (`< md`), each From/To row splits into two lines: CategorySelect (full width) on line 1, Currency + Amount + Delete button inline on line 2. Desktop keeps a single inline row.
+
 **Keyboard shortcuts:**
 - `Ctrl+S` — submits a valid form; no-op if invariant not met
 - `Enter` on an amount input — appends a new row to the same section, moves focus to the Category field of the new row
@@ -417,7 +419,7 @@ Multi-line transactions display stacked rows in From/To cells (one sub-row per l
 
 ### 7.4 Categories page (`/categories`)
 
-**Header:** "Categories" title + "New Category" button (top right).
+**Header:** "New Category" button only (right-aligned). Page title is shown by MobileTopBar.
 
 **List layout:** Grouped by `type` (section header per type in order: Asset → Liability → Income → Expense → Equity). Within each type, root categories are listed; their children are indented beneath them.
 
@@ -654,7 +656,7 @@ This migration runs once and never again.
 | 12 | `CategorySelect` component — searchable combobox built on `cmdk` following the shadcn Command/Combobox pattern; grouped by type, children indented, auto-focus top match, keyboard navigation; replace all category inputs in `TransactionForm` | ✅ Complete |
 | 13 | Transaction form enhancements — keyboard shortcuts (`Ctrl+S`, `Tab`, `Enter`, `Escape`); zero-balance equality indicator with animation | ✅ Complete |
 | 14 | Toast notification system — `toastStore`, `Toast`, `ToastContainer`; all event wiring; Undo for transaction save; clear on navigation and sign-out | ✅ Complete |
-| 15 | Mobile & UX bug fixes — Ledger and Categories card views on mobile; transaction form row widths (CategorySelect `flex-1`, fixed currency + amount widths); date input full width matching other inputs; BottomNav smooth scroll hide/restore with iOS safe-area; mobile sticky top bar layout shell (consumed by Phase 16 for sync wiring); Profile currencies button press animation and popup elevation; Home metrics dash for empty state; Google permissions denied error state and retry; `index.html` first-load spinner; base CoA descriptions for AR and AP | ⏳ Pending |
+| 15 | Mobile & UX bug fixes — Ledger and Categories card views on mobile; transaction form row widths (CategorySelect `flex-1`, fixed currency + amount widths) and two-line mobile layout; date input full width matching other inputs; BottomNav smooth scroll hide/restore with iOS safe-area; mobile sticky top bar layout shell (consumed by Phase 16 for sync wiring); Profile currencies button press animation and popup elevation; page headers removed (redundant with MobileTopBar); Google permissions denied error state and retry; `index.html` first-load spinner; base CoA descriptions for AR and AP | ✅ Complete |
 | 16 | Auto sync — `syncStore` additions (`pendingChangeCount`, `pendingSyncTimer`, `schedulePendingSync`, `decrementAndMaybeCancel`); wire all DB writes to `schedulePendingSync`; wire undo to `decrementAndMaybeCancel`; manual sync buttons (desktop navbar + mobile top bar) cancel timer and call `syncEngine.sync()` immediately; sync state icon wired to mobile top bar | ⏳ Pending |
 
 ---
@@ -819,11 +821,14 @@ The `flex-1 min-w-0` on CategorySelect also ensures its dropdown popover inherit
 *Transaction form — date input width:*
 Remove any fixed narrow width from the date input. Apply `w-full` so it matches the full-width behaviour of the Description and Notes inputs.
 
+*Transaction form — two-line mobile layout:*
+On mobile (`< md`), each From/To row splits into two lines: CategorySelect (full width) on line 1, Currency + Amount + Delete button inline on line 2. Desktop (`md+`) keeps a single inline row.
+
 *Ledger — mobile card view:*
 On `< md`, replace the table with a card list in `LedgerTable.jsx`. Each transaction renders as a card with:
 - First row: Date (`font-numeric`, muted) and Description (semibold), space-between
 - Second row if Notes present: Notes text, truncated to one line, muted and smaller
-- From section label + stacked entries: each entry on its own line as `Category — Currency Amount` (`font-numeric` for amount)
+- From section label + stacked entries: each entry on its own line — Category (truncated) on the left, Amount + Currency right-aligned (`font-numeric` for amount and currency)
 - To section label + stacked entries: same format
 - Top-right corner of card: Edit icon and Delete icon
 - Cards separated by a subtle divider or gap
@@ -839,9 +844,6 @@ On `< md`, replace the table with a card list in `CategoryTable.jsx`. Each categ
 - Cards separated by a subtle divider
 
 Account type group headers (Assets, Liabilities, etc.) remain as full-width section labels between groups. The desktop table layout is unchanged.
-
-*Home — metrics empty state:*
-In `Home.jsx` (or `useMetrics.js`), wherever metric values are rendered: if a value is zero or the data set is empty, display `—` in place of any numeric value. Do not leave a blank space.
 
 *Profile — currencies UI:*
 In `Profile.jsx`:
@@ -862,7 +864,6 @@ In `googleAuth.js`, inspect the GIS token client callback response. If the respo
 - Date input is full-width, consistent with Description and Notes
 - Ledger shows card layout on mobile; desktop table is unchanged
 - Categories shows card layout on mobile; desktop table is unchanged
-- Home metrics show `—` when values are zero
 - "Add Currency" button visually depresses on tap
 - Currency popup is clearly elevated from the background
 - Denying Google OAuth shows the error message and Try again button; the app does not proceed
