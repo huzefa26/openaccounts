@@ -8,6 +8,8 @@ import { baseCurrencies } from '../constants/baseCurrencies';
 import { TOAST_DURATION_SUCCESS } from '../constants/app';
 import { resetDB } from '../db/index';
 import { deleteFile, findFile } from '../sync/googleDrive';
+import DataAndSyncSection from '../components/sections/DataAndSyncSection';
+import ResetAppFlow from '../components/modals/ResetAppFlow';
 import Modal from '../components/ui/Modal';
 import Button from '../components/ui/Button';
 
@@ -270,8 +272,7 @@ export default function Profile() {
   const syncStore = useSyncStore();
   const authStore = useAuthStore();
   const [exporting, setExporting] = useState(false);
-  const [resetStep, setResetStep] = useState(null);
-  const [resetInput, setResetInput] = useState('');
+  const [showResetFlow, setShowResetFlow] = useState(false);
 
   useEffect(() => {
     fetchAll();
@@ -279,7 +280,6 @@ export default function Profile() {
   }, []);
 
   async function handleReset() {
-    setResetStep('deleting');
     try {
       await resetDB();
       try {
@@ -330,142 +330,18 @@ export default function Profile() {
           onRemove={removeCurrency}
         />
 
-        <div className="border border-border rounded-lg p-5">
-          <h2 className="text-xs font-semibold text-text-secondary uppercase tracking-wider mb-3">Data & Sync</h2>
-          <div className="flex flex-col gap-4">
-            <div>
-              <p className="text-sm text-text-secondary mb-2">
-                Download a complete JSON backup of all your data.
-              </p>
-              <Button onClick={handleExport} disabled={exporting}>
-                {exporting ? 'Exporting...' : 'Export Data'}
-              </Button>
-            </div>
-            <hr className="border-border" />
-            <div>
-              <p className="text-sm text-text-secondary mb-2">
-                Sync your data with Google Drive for backup across devices.
-              </p>
-              {authStore.isSignedIn ? (
-                <Button
-                  onClick={() => syncStore.syncNow()}
-                  disabled={syncStore.status === 'syncing'}
-                >
-                  {syncStore.status === 'syncing' ? 'Syncing...' : 'Sync with Google Drive'}
-                </Button>
-              ) : (
-                <Button variant="ghost" disabled>
-                  Sign in to enable sync
-                </Button>
-              )}
-              <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-2">
-                <span className="text-xs text-text-tertiary">Status:</span>
-                <span className="text-xs text-text-secondary">
-                  {syncStore.status === 'syncing'
-                    ? 'Syncing...'
-                    : syncStore.status === 'error'
-                      ? 'Sync failed'
-                      : authStore.isSignedIn
-                        ? 'Ready'
-                        : 'Not signed in'}
-                </span>
-                <span className="text-xs text-text-tertiary">Last synced:</span>
-                <span className="text-xs text-text-secondary font-numeric">
-                  {syncStore.lastSynced
-                    ? new Date(syncStore.lastSynced).toLocaleString()
-                    : authStore.isSignedIn ? 'Never' : '—'}
-                </span>
-              </div>
-              {syncStore.error && (
-                <p className="text-xs text-expense mt-1">{syncStore.error}</p>
-              )}
-            </div>
-            <hr className="border-border" />
-            <div>
-              <p className="text-xs font-semibold text-expense uppercase tracking-wider mb-2">Danger Zone</p>
-              <p className="text-sm text-text-secondary mb-2">
-                This will permanently delete all your data, including your Google Drive backup.
-              </p>
-              <Button
-                variant="danger"
-                onClick={() => { setResetStep(0); setResetInput(''); }}
-              >
-                Reset App
-              </Button>
-            </div>
-          </div>
-        </div>
+        <DataAndSyncSection
+          onExport={handleExport}
+          exporting={exporting}
+          onReset={() => setShowResetFlow(true)}
+        />
       </div>
 
-      {resetStep === 0 && (
-        <Modal open onClose={() => setResetStep(null)} title="Reset App">
-          <p className="text-sm text-text-primary mb-4">
-            This will permanently delete all your data, including transactions, categories, currencies, settings, and your Google Drive backup. This cannot be undone.
-          </p>
-          <div className="flex justify-end gap-2">
-            <Button variant="ghost" onClick={() => setResetStep(null)}>Cancel</Button>
-            <Button variant="danger" onClick={() => { setResetInput(''); setResetStep(1); }}>Continue</Button>
-          </div>
-        </Modal>
-      )}
-
-      {resetStep === 1 && (
-        <Modal open onClose={() => setResetStep(null)} title="Confirm Reset">
-          <p className="text-sm text-text-primary mb-3">
-            Type <strong>delete</strong> below to confirm.
-          </p>
-          <input
-            type="text"
-            value={resetInput}
-            onChange={(e) => setResetInput(e.target.value)}
-            placeholder="delete"
-            className="w-full px-3 py-2 text-sm bg-surface border border-border rounded-md outline-none focus:ring-2 focus:ring-accent focus:border-accent mb-4"
-          />
-          <div className="flex justify-end gap-2">
-            <Button variant="ghost" onClick={() => setResetStep(null)}>Cancel</Button>
-            <Button
-              variant="danger"
-              disabled={resetInput !== 'delete'}
-              onClick={() => { setResetInput(''); setResetStep(2); }}
-            >
-              Confirm
-            </Button>
-          </div>
-        </Modal>
-      )}
-
-      {resetStep === 2 && (
-        <Modal open onClose={() => setResetStep(null)} title="Final Confirmation">
-          <p className="text-sm text-text-primary mb-3">
-            Type <strong>i am sure</strong> to proceed.
-          </p>
-          <input
-            type="text"
-            value={resetInput}
-            onChange={(e) => setResetInput(e.target.value)}
-            placeholder="i am sure"
-            className="w-full px-3 py-2 text-sm bg-surface border border-border rounded-md outline-none focus:ring-2 focus:ring-accent focus:border-accent mb-4"
-          />
-          <div className="flex justify-end gap-2">
-            <Button variant="ghost" onClick={() => setResetStep(null)}>Cancel</Button>
-            <Button
-              variant="danger"
-              disabled={resetInput !== 'i am sure'}
-              onClick={handleReset}
-            >
-              Reset App
-            </Button>
-          </div>
-        </Modal>
-      )}
-
-      {resetStep === 'deleting' && (
-        <Modal open onClose={() => {}} title="Resetting App">
-          <div className="flex flex-col items-center gap-4 py-4">
-            <div className="w-8 h-8 border-2 border-accent border-t-transparent rounded-full animate-spin" />
-            <p className="text-sm text-text-secondary">Resetting data...</p>
-          </div>
-        </Modal>
+      {showResetFlow && (
+        <ResetAppFlow
+          onReset={handleReset}
+          onClose={() => setShowResetFlow(false)}
+        />
       )}
     </div>
   );
