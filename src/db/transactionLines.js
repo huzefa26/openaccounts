@@ -33,11 +33,6 @@ export async function update(id, data) {
   return updated;
 }
 
-export async function del(id) {
-  const db = await dbPromise;
-  await db.delete('transaction_lines', id);
-}
-
 export async function deleteByTransactionId(transactionId) {
   const db = await dbPromise;
   const lines = await getByTransactionId(transactionId);

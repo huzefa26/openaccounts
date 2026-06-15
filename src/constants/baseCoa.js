@@ -23,4 +23,3 @@ export const baseCoa = [
   { name: 'Opening Balance Equity', type: 'equity', parent: null, is_system: true },
 ];
 
-export const CATEGORY_TYPES = ['asset', 'liability', 'income', 'expense', 'equity'];

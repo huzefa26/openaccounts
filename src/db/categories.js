@@ -17,11 +17,6 @@ export async function getById(id) {
   return db.get('categories', id);
 }
 
-export async function getByType(type) {
-  const db = await dbPromise;
-  return db.getAllFromIndex('categories', 'type', type);
-}
-
 async function assertUniqueName(db, name, excludeId) {
   const all = await db.getAll('categories');
   const normalized = name.trim().toLowerCase();

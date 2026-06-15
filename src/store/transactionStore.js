@@ -130,8 +130,6 @@ const useTransactionStore = create((set, get) => ({
     }
   },
 
-  clearLastSavedTransaction: () => set({ lastSavedTransaction: null }),
-
   formRestoreState: null,
 
   saveFormRestoreState: (data) => set({ formRestoreState: data }),

@@ -17,7 +17,4 @@ export async function getAll() {
   return db.getAll('settings');
 }
 
-export async function del(key) {
-  const db = await dbPromise;
-  await db.delete('settings', key);
-}
+

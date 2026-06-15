@@ -12,11 +12,6 @@ export async function getAll() {
   return db.getAll('currencies');
 }
 
-export async function getByCode(code) {
-  const db = await dbPromise;
-  return db.get('currencies', code);
-}
-
 export async function getDefault() {
   const db = await dbPromise;
   const all = await db.getAll('currencies');
