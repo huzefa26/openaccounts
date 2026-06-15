@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { initDB } from '../../db/index';
 import { seedFirstRun } from '../../db/seed';
+import { STORE_NAMES, buildSnapshot, populateFromSnapshot } from '../../db/snapshot';
 import { findFile, readFile, createFile } from '../../sync/googleDrive';
 import * as dbSettings from '../../db/settings';
 
@@ -13,32 +14,16 @@ const STEPS = {
   error: 'Couldn\'t reach Google Drive. Please check your connection and try again.',
 };
 
-const STORE_NAMES = ['categories', 'transactions', 'transaction_lines', 'currencies', 'settings'];
-
-async function populateFromSnapshot(db, data) {
-  for (const storeName of STORE_NAMES) {
-    const records = data[storeName];
-    if (!records || records.length === 0) continue;
-
-    const tx = db.transaction(storeName, 'readwrite');
-    const store = tx.objectStore(storeName);
-    await store.clear();
-    for (const record of records) {
-      await store.put(record);
-    }
-    await tx.done;
-  }
-}
-
 async function buildPushSnapshot(db) {
-  const snapshot = { version: 2, exported_at: new Date().toISOString() };
+  const data = {};
 
   for (const storeName of STORE_NAMES) {
     const tx = db.transaction(storeName, 'readonly');
     const store = tx.objectStore(storeName);
-    snapshot[storeName] = await store.getAll();
+    data[storeName] = await store.getAll();
   }
 
+  const snapshot = buildSnapshot(data);
   await createFile(snapshot);
 }
 

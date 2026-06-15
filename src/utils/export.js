@@ -3,6 +3,7 @@ import * as dbTransactions from '../db/transactions';
 import * as dbTransactionLines from '../db/transactionLines';
 import * as dbCurrencies from '../db/currencies';
 import * as dbSettings from '../db/settings';
+import { buildSnapshot } from '../db/snapshot';
 
 export async function exportAllData() {
   const [categories, transactions, lines, currencies, settings] = await Promise.all([
@@ -13,15 +14,7 @@ export async function exportAllData() {
     dbSettings.getAll(),
   ]);
 
-  const payload = {
-    version: 2,
-    exported_at: new Date().toISOString(),
-    categories,
-    transactions,
-    transaction_lines: lines,
-    currencies,
-    settings,
-  };
+  const payload = buildSnapshot({ categories, transactions, transaction_lines: lines, currencies, settings });
 
   const today = new Date().toISOString().slice(0, 10).replace(/-/g, '');
   const filename = `openaccounts_export_${today}.json`;

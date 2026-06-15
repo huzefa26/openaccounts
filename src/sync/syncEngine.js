@@ -4,6 +4,7 @@ import * as dbTransactionLines from '../db/transactionLines';
 import * as dbCurrencies from '../db/currencies';
 import * as dbSettings from '../db/settings';
 import { dbPromise } from '../db/index';
+import { buildSnapshot } from '../db/snapshot';
 import { findFile, readFile, createFile, updateFile } from './googleDrive';
 
 const STORE_CONFIG = [
@@ -65,18 +66,6 @@ async function applyMerged(merged) {
 
     await tx.done;
   }
-}
-
-function buildSnapshot(data) {
-  return {
-    version: 2,
-    exported_at: new Date().toISOString(),
-    categories: data.categories,
-    transactions: data.transactions,
-    transaction_lines: data.transaction_lines,
-    currencies: data.currencies,
-    settings: data.settings,
-  };
 }
 
 export async function sync(lastSyncedAt) {
