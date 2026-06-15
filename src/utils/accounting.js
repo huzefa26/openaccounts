@@ -1,6 +1,5 @@
-import * as dbTransactions from '../db/transactions';
-import * as dbLines from '../db/transactionLines';
-import * as dbCategories from '../db/categories';
+import useTransactionStore from '../store/transactionStore';
+import useCategoryStore from '../store/categoryStore';
 import { dbPromise } from '../db/index';
 
 const OB_DEBIT_TYPES = ['asset', 'expense'];
@@ -9,21 +8,20 @@ const OB_CREDIT_TYPES = ['liability', 'equity', 'income'];
 export async function handleOpeningBalance(category, newBalance, defaultCurrency) {
   const currency = defaultCurrency?.code || 'AED';
 
-  const allTransactions = await dbTransactions.getAll();
-  const existingTx = allTransactions.find(
+  const transactions = useTransactionStore.getState().transactions;
+  const existingTx = transactions.find(
     (t) => t.is_opening_balance && t.opening_balance_category_id === category.id,
   );
 
   if (newBalance === 0) {
     if (existingTx) {
-      await dbLines.deleteByTransactionId(existingTx.id);
-      await dbTransactions.del(existingTx.id);
+      await useTransactionStore.getState().deleteTransaction(existingTx.id, { notify: false });
     }
     return;
   }
 
-  const equityCategories = await dbCategories.getAll();
-  const obe = equityCategories.find(
+  const categories = useCategoryStore.getState().categories;
+  let obe = categories.find(
     (c) => c.is_system && c.type === 'equity',
   );
 
@@ -42,6 +40,9 @@ export async function handleOpeningBalance(category, newBalance, defaultCurrency
       updated_at: now,
     };
     await db.add('categories', obe);
+    const categoryStore = useCategoryStore.getState();
+    categoryStore.invalidateCache();
+    await categoryStore.fetchAll();
   }
 
   const now = new Date().toISOString();
@@ -64,25 +65,23 @@ export async function handleOpeningBalance(category, newBalance, defaultCurrency
   const lines = [...debitEntries, ...creditEntries];
 
   if (existingTx) {
-    await dbLines.deleteByTransactionId(existingTx.id);
-    await dbTransactions.update(existingTx.id, {
-      date: today,
-      description: `Opening balance: ${category.name}`,
-      updated_at: now,
-    });
-    for (const line of lines) {
-      await dbLines.create({ ...line, transaction_id: existingTx.id });
-    }
+    await useTransactionStore.getState().updateTransaction(existingTx.id, {
+      transaction: {
+        date: today,
+        description: `Opening balance: ${category.name}`,
+      },
+      lines,
+    }, { notify: false });
   } else {
-    const tx = await dbTransactions.create({
-      date: today,
-      description: `Opening balance: ${category.name}`,
-      notes: '',
-      is_opening_balance: true,
-      opening_balance_category_id: category.id,
-    });
-    for (const line of lines) {
-      await dbLines.create({ ...line, transaction_id: tx.id });
-    }
+    await useTransactionStore.getState().createTransaction({
+      transaction: {
+        date: today,
+        description: `Opening balance: ${category.name}`,
+        notes: '',
+        is_opening_balance: true,
+        opening_balance_category_id: category.id,
+      },
+      lines,
+    }, { notify: false });
   }
 }
