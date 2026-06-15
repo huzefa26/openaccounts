@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect, useMemo } from 'react';
 import { Command } from 'cmdk';
+import useClickOutside from '../../hooks/useClickOutside';
 
 const TYPE_ORDER = ['asset', 'liability', 'income', 'expense', 'equity'];
 const TYPE_LABELS = { asset: 'Assets', liability: 'Liabilities', income: 'Income', expense: 'Expenses', equity: 'Equity' };
@@ -7,19 +8,9 @@ const TYPE_LABELS = { asset: 'Assets', liability: 'Liabilities', income: 'Income
 export default function CategorySelect({ value, onChange, placeholder = 'Select category', categories = [] }) {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState('');
-  const ref = useRef(null);
+  const ref = useClickOutside(() => setOpen(false));
   const triggerRef = useRef(null);
   const inputRef = useRef(null);
-
-  useEffect(() => {
-    function handleClickOutside(e) {
-      if (ref.current && !ref.current.contains(e.target)) {
-        setOpen(false);
-      }
-    }
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
 
   useEffect(() => {
     if (open) {

@@ -1,18 +1,9 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState } from 'react';
+import useClickOutside from '../../hooks/useClickOutside';
 
 export default function MultiSelect({ label, options, selected = [], onChange, placeholder = 'All' }) {
   const [open, setOpen] = useState(false);
-  const ref = useRef(null);
-
-  useEffect(() => {
-    function handleClickOutside(e) {
-      if (ref.current && !ref.current.contains(e.target)) {
-        setOpen(false);
-      }
-    }
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
+  const ref = useClickOutside(() => setOpen(false));
 
   function toggle(value) {
     const next = selected.includes(value)
