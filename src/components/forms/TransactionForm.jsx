@@ -1,8 +1,10 @@
-import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
+import { useState, useEffect, useMemo, useRef, useReducer } from 'react';
 import Input from '../ui/Input';
 import Select from '../ui/Select';
 import CategorySelect from '../ui/CategorySelect';
 import Button from '../ui/Button';
+import BalanceIndicator from './BalanceIndicator';
+import useFormRestore from '../../hooks/useFormRestore';
 import useCategoryStore from '../../store/categoryStore';
 import useCurrencyStore from '../../store/currencyStore';
 import useTransactionStore from '../../store/transactionStore';
@@ -11,102 +13,110 @@ function today() {
   return new Date().toISOString().slice(0, 10);
 }
 
+function createRow(defaultCurrency) {
+  return { id: crypto.randomUUID(), categoryId: '', currency: defaultCurrency?.code || '', amount: '' };
+}
+
+function initRows(initialTransaction, initialLines, defaultCurrency) {
+  if (initialLines) {
+    const creditRows = initialLines
+      .filter((l) => l.entry_type === 'credit')
+      .map((l) => ({ id: crypto.randomUUID(), categoryId: l.category_id, currency: l.currency, amount: String(l.amount) }));
+    const debitRows = initialLines
+      .filter((l) => l.entry_type === 'debit')
+      .map((l) => ({ id: crypto.randomUUID(), categoryId: l.category_id, currency: l.currency, amount: String(l.amount) }));
+    return {
+      date: initialTransaction.date,
+      description: initialTransaction.description,
+      notes: initialTransaction.notes || '',
+      fromRows: creditRows.length > 0 ? creditRows : [createRow(defaultCurrency)],
+      toRows: debitRows.length > 0 ? debitRows : [createRow(defaultCurrency)],
+    };
+  }
+  return {
+    date: today(),
+    description: '',
+    notes: '',
+    fromRows: [createRow(defaultCurrency)],
+    toRows: [createRow(defaultCurrency)],
+  };
+}
+
+function formReducer(state, action) {
+  switch (action.type) {
+    case 'SET_FIELD':
+      return { ...state, [action.field]: action.value };
+    case 'UPDATE_ROW': {
+      const { side, id, field, value } = action;
+      const key = side === 'from' ? 'fromRows' : 'toRows';
+      return { ...state, [key]: state[key].map((r) => (r.id === id ? { ...r, [field]: value } : r)) };
+    }
+    case 'ADD_ROW': {
+      const { side, row } = action;
+      const key = side === 'from' ? 'fromRows' : 'toRows';
+      return { ...state, [key]: [...state[key], row] };
+    }
+    case 'DELETE_ROW': {
+      const { side, id } = action;
+      const key = side === 'from' ? 'fromRows' : 'toRows';
+      const rows = state[key];
+      return { ...state, [key]: rows.length > 1 ? rows.filter((r) => r.id !== id) : rows };
+    }
+    case 'RESET': {
+      const { defaultCurrency } = action;
+      return {
+        ...state,
+        description: '',
+        notes: '',
+        fromRows: [createRow(defaultCurrency)],
+        toRows: [createRow(defaultCurrency)],
+      };
+    }
+    case 'RESTORE':
+      return action.state;
+    default:
+      return state;
+  }
+}
+
 export default function TransactionForm({ initialTransaction, initialLines, onSuccess }) {
   const { categories, fetchAll: fetchCategories } = useCategoryStore();
   const { currencies, defaultCurrency, fetchAll: fetchCurrencies } = useCurrencyStore();
-
-  function createRow() {
-    return { id: crypto.randomUUID(), categoryId: '', currency: defaultCurrency?.code || '', amount: '' };
-  }
-  const { createTransaction, updateTransaction, formRestoreState, saveFormRestoreState, markFormRestored, undoRestoreState, clearUndoRestoreState } = useTransactionStore();
+  const { createTransaction, updateTransaction } = useTransactionStore();
 
   const isEdit = Boolean(initialTransaction);
 
-  function initRows() {
-    if (initialLines) {
-      const creditRows = initialLines
-        .filter((l) => l.entry_type === 'credit')
-        .map((l) => ({ id: crypto.randomUUID(), categoryId: l.category_id, currency: l.currency, amount: String(l.amount) }));
-      const debitRows = initialLines
-        .filter((l) => l.entry_type === 'debit')
-        .map((l) => ({ id: crypto.randomUUID(), categoryId: l.category_id, currency: l.currency, amount: String(l.amount) }));
-      return {
-        date: initialTransaction.date,
-        description: initialTransaction.description,
-        notes: initialTransaction.notes || '',
-        fromRows: creditRows.length > 0 ? creditRows : [createRow()],
-        toRows: debitRows.length > 0 ? debitRows : [createRow()],
-      };
-    }
-    return {
-      date: today(),
-      description: '',
-      notes: '',
-      fromRows: [createRow()],
-      toRows: [createRow()],
-    };
-  }
+  const [form, dispatch] = useReducer(
+    formReducer,
+    { initialTransaction, initialLines, defaultCurrency },
+    (init) => initRows(init.initialTransaction, init.initialLines, init.defaultCurrency),
+  );
 
-  const [date, setDate] = useState(initRows().date);
-  const [description, setDescription] = useState(initRows().description);
-  const [notes, setNotes] = useState(initRows().notes);
-  const [fromRows, setFromRows] = useState(initRows().fromRows);
-  const [toRows, setToRows] = useState(initRows().toRows);
+  const formRef = useFormRestore(dispatch, isEdit);
+  formRef.current = form;
+
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState(null);
-
-  const formStateRef = useRef({ date, description, notes, fromRows, toRows });
-  useEffect(() => { formStateRef.current = { date, description, notes, fromRows, toRows }; });
-
-  useEffect(() => {
-    if (!isEdit && formRestoreState) {
-      setDate(formRestoreState.date);
-      setDescription(formRestoreState.description);
-      setNotes(formRestoreState.notes || '');
-      setFromRows(formRestoreState.fromRows);
-      setToRows(formRestoreState.toRows);
-      markFormRestored();
-    }
-  }, []);
-
-  useEffect(() => {
-    if (!isEdit && undoRestoreState) {
-      setDate(undoRestoreState.date);
-      setDescription(undoRestoreState.description);
-      setNotes(undoRestoreState.notes || '');
-      setFromRows(undoRestoreState.fromRows);
-      setToRows(undoRestoreState.toRows);
-      clearUndoRestoreState();
-    }
-  }, [undoRestoreState]);
-
-  useEffect(() => {
-    return () => {
-      if (!isEdit) {
-        saveFormRestoreState(formStateRef.current);
-      }
-    };
-  }, [isEdit]);
 
   useEffect(() => { fetchCategories(); fetchCurrencies(); }, []);
 
   const balances = useMemo(() => {
     const currencyMap = {};
 
-    for (const row of fromRows) {
+    for (const row of form.fromRows) {
       if (!row.currency || !row.amount) continue;
       if (!currencyMap[row.currency]) currencyMap[row.currency] = { credits: 0, debits: 0 };
       currencyMap[row.currency].credits += Number(row.amount);
     }
 
-    for (const row of toRows) {
+    for (const row of form.toRows) {
       if (!row.currency || !row.amount) continue;
       if (!currencyMap[row.currency]) currencyMap[row.currency] = { credits: 0, debits: 0 };
       currencyMap[row.currency].debits += Number(row.amount);
     }
 
     return currencyMap;
-  }, [fromRows, toRows]);
+  }, [form.fromRows, form.toRows]);
 
   const allCurrenciesBalanced = useMemo(() => {
     const codes = Object.keys(balances);
@@ -115,24 +125,16 @@ export default function TransactionForm({ initialTransaction, initialLines, onSu
   }, [balances]);
 
   const allRowsFilled =
-    description.trim().length > 0 &&
-    [...fromRows, ...toRows].every(
+    form.description.trim().length > 0 &&
+    [...form.fromRows, ...form.toRows].every(
       (r) => r.categoryId && r.currency && Number(r.amount) > 0,
     );
 
   const canSave = allCurrenciesBalanced && allRowsFilled;
 
-  function updateRow(side, id, field, value) {
-    const updater = (rows) =>
-      rows.map((r) => (r.id === id ? { ...r, [field]: value } : r));
-    if (side === 'from') setFromRows(updater);
-    else setToRows(updater);
-  }
-
   function addRow(side) {
-    const newRow = createRow();
-    if (side === 'from') setFromRows((prev) => [...prev, newRow]);
-    else setToRows((prev) => [...prev, newRow]);
+    const newRow = createRow(defaultCurrency);
+    dispatch({ type: 'ADD_ROW', side, row: newRow });
     requestAnimationFrame(() => {
       const el = document.querySelector(`[data-row-id="${newRow.id}"]`);
       if (el) {
@@ -142,19 +144,8 @@ export default function TransactionForm({ initialTransaction, initialLines, onSu
     });
   }
 
-  function deleteRow(side, id) {
-    if (side === 'from') {
-      setFromRows((prev) => (prev.length > 1 ? prev.filter((r) => r.id !== id) : prev));
-    } else {
-      setToRows((prev) => (prev.length > 1 ? prev.filter((r) => r.id !== id) : prev));
-    }
-  }
-
   function resetForm() {
-    setDescription('');
-    setNotes('');
-    setFromRows([createRow()]);
-    setToRows([createRow()]);
+    dispatch({ type: 'RESET', defaultCurrency });
     setSaveError(null);
   }
 
@@ -167,14 +158,14 @@ export default function TransactionForm({ initialTransaction, initialLines, onSu
 
     try {
       const transaction = {
-        date,
-        description: description.trim(),
-        notes: notes.trim(),
+        date: form.date,
+        description: form.description.trim(),
+        notes: form.notes.trim(),
         is_opening_balance: false,
         opening_balance_category_id: null,
       };
 
-      const fromLines = fromRows
+      const fromLines = form.fromRows
         .filter((r) => r.categoryId && Number(r.amount) > 0)
         .map((r) => ({
           category_id: r.categoryId,
@@ -183,7 +174,7 @@ export default function TransactionForm({ initialTransaction, initialLines, onSu
           amount: Number(r.amount),
         }));
 
-      const toLines = toRows
+      const toLines = form.toRows
         .filter((r) => r.categoryId && Number(r.amount) > 0)
         .map((r) => ({
           category_id: r.categoryId,
@@ -207,7 +198,7 @@ export default function TransactionForm({ initialTransaction, initialLines, onSu
   }
 
   function renderRows(side) {
-    const rows = side === 'from' ? fromRows : toRows;
+    const rows = side === 'from' ? form.fromRows : form.toRows;
 
     return (
       <div className="flex flex-col gap-2">
@@ -216,7 +207,7 @@ export default function TransactionForm({ initialTransaction, initialLines, onSu
             <div className="flex-1 min-w-0">
               <CategorySelect
                 value={row.categoryId}
-                onChange={(id) => updateRow(side, row.id, 'categoryId', id)}
+                onChange={(id) => dispatch({ type: 'UPDATE_ROW', side, id: row.id, field: 'categoryId', value: id })}
                 categories={categories}
                 placeholder="Select category"
               />
@@ -226,7 +217,7 @@ export default function TransactionForm({ initialTransaction, initialLines, onSu
                 <Select
                   name={`${side}-currency-${index}`}
                   value={row.currency}
-                  onChange={(e) => updateRow(side, row.id, 'currency', e.target.value)}
+                  onChange={(e) => dispatch({ type: 'UPDATE_ROW', side, id: row.id, field: 'currency', value: e.target.value })}
                   options={currencies.map((c) => ({ value: c.code, label: c.code }))}
                 />
               </div>
@@ -235,14 +226,14 @@ export default function TransactionForm({ initialTransaction, initialLines, onSu
                   name={`${side}-amount-${index}`}
                   type="number"
                   value={row.amount}
-                  onChange={(e) => updateRow(side, row.id, 'amount', e.target.value)}
+                  onChange={(e) => dispatch({ type: 'UPDATE_ROW', side, id: row.id, field: 'amount', value: e.target.value })}
                   placeholder="0.00"
                   className="font-numeric"
                 />
               </div>
               <button
                 type="button"
-                onClick={() => deleteRow(side, row.id)}
+                onClick={() => dispatch({ type: 'DELETE_ROW', side, id: row.id })}
                 disabled={rows.length <= 1}
                 className={`inline-flex items-center justify-center w-8 h-8 rounded-md transition-colors duration-base flex-shrink-0 ${
                   rows.length <= 1
@@ -291,49 +282,6 @@ export default function TransactionForm({ initialTransaction, initialLines, onSu
     setAnimating(next);
   }, [balances]);
 
-  function renderBalanceIndicator() {
-    const codes = Object.keys(balances);
-    if (codes.length === 0) return null;
-
-    return (
-      <div className="flex flex-wrap gap-4 px-1">
-        {codes.map((code) => {
-          const { credits, debits } = balances[code];
-          const balanced = credits === debits;
-          const isAnimating = animating.has(code);
-
-          const lineAnimClass = isAnimating && balanced ? 'animate-pulse-once' : '';
-          const symbolAnimClass = isAnimating && balanced ? 'animate-fade-cross' : '';
-
-          function handleAnimEnd() {
-            setAnimating((prev) => {
-              const next = new Set(prev);
-              next.delete(code);
-              return next;
-            });
-          }
-
-          return (
-            <div
-              key={code}
-              onAnimationEnd={handleAnimEnd}
-              className={`flex items-center gap-1.5 text-sm ${lineAnimClass}`}
-            >
-              <span className="text-text-secondary">Credits</span>
-              <span className="font-numeric text-text-primary">{credits.toFixed(2)}</span>
-              <span className={`font-numeric text-base leading-none ${symbolAnimClass} ${balanced ? 'text-income' : 'text-expense'}`}>
-                {balanced ? '=' : '≠'}
-              </span>
-              <span className="text-text-secondary">Debits</span>
-              <span className="font-numeric text-text-primary">{debits.toFixed(2)}</span>
-              <span className="text-xs font-numeric text-text-tertiary">{code}</span>
-            </div>
-          );
-        })}
-      </div>
-    );
-  }
-
   function handleKeyDown(e) {
     if (e.ctrlKey && e.key === 's') {
       e.preventDefault();
@@ -349,7 +297,6 @@ export default function TransactionForm({ initialTransaction, initialLines, onSu
         return;
       }
     }
-
   }
 
   return (
@@ -358,15 +305,15 @@ export default function TransactionForm({ initialTransaction, initialLines, onSu
         label="Date"
         name="date"
         type="date"
-        value={date}
-        onChange={(e) => setDate(e.target.value)}
+        value={form.date}
+        onChange={(e) => dispatch({ type: 'SET_FIELD', field: 'date', value: e.target.value })}
         className="w-full"
       />
       <Input
         label="Description"
         name="description"
-        value={description}
-        onChange={(e) => setDescription(e.target.value)}
+        value={form.description}
+        onChange={(e) => dispatch({ type: 'SET_FIELD', field: 'description', value: e.target.value })}
         required
       />
 
@@ -383,15 +330,25 @@ export default function TransactionForm({ initialTransaction, initialLines, onSu
       </section>
 
       <div className="flex items-center justify-between">
-        {renderBalanceIndicator()}
+        <BalanceIndicator
+          balances={balances}
+          animating={animating}
+          onAnimEnd={(code) => {
+            setAnimating((prev) => {
+              const next = new Set(prev);
+              next.delete(code);
+              return next;
+            });
+          }}
+        />
       </div>
 
       <div className="flex flex-col gap-1.5">
         <label htmlFor="notes" className="text-sm font-medium text-text-primary">Notes</label>
         <textarea
           id="notes"
-          value={notes}
-          onChange={(e) => setNotes(e.target.value)}
+          value={form.notes}
+          onChange={(e) => dispatch({ type: 'SET_FIELD', field: 'notes', value: e.target.value })}
           rows={3}
           className="px-3 py-2 text-sm bg-surface border border-border rounded-md transition-colors duration-base outline-none focus:ring-2 focus:ring-accent focus:border-accent hover:border-border-strong resize-none"
         />
@@ -405,7 +362,7 @@ export default function TransactionForm({ initialTransaction, initialLines, onSu
         type="submit"
         disabled={!canSave || saving}
         title={
-          !description.trim()
+          !form.description.trim()
             ? 'Enter a description'
             : !allCurrenciesBalanced
               ? 'Balance credits and debits for each currency'
