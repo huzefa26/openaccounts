@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import * as dbSettings from '../db/settings';
+import { registerOnChange } from '../db/sync';
 import { sync as runSyncEngine } from '../sync/syncEngine';
 import useTransactionStore from './transactionStore';
 import useCategoryStore from './categoryStore';
@@ -109,5 +110,10 @@ const useSyncStore = create((set, get) => ({
 
   clearError: () => set({ error: null }),
 }));
+
+registerOnChange(() => {
+  useSyncStore.setState((s) => ({ pendingChangeCount: s.pendingChangeCount + 1 }));
+  useSyncStore.getState().schedulePendingSync();
+});
 
 export default useSyncStore;

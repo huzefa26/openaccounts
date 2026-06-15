@@ -1,11 +1,5 @@
 import { dbPromise } from './index';
-
-async function maybeScheduleSync(suppressSync) {
-  if (suppressSync) return;
-  const { default: useSyncStore } = await import('../store/syncStore');
-  useSyncStore.setState((s) => ({ pendingChangeCount: s.pendingChangeCount + 1 }));
-  useSyncStore.getState().schedulePendingSync();
-}
+import { notifyChange } from './sync';
 
 export async function getAll() {
   const db = await dbPromise;
@@ -35,7 +29,7 @@ export async function create(data, { suppressSync = false } = {}) {
   const now = new Date().toISOString();
   const record = { ...data, id, created_at: now, updated_at: now };
   await db.add('categories', record);
-  await maybeScheduleSync(suppressSync);
+  if (!suppressSync) notifyChange();
   return record;
 }
 
@@ -49,7 +43,7 @@ export async function update(id, data, { suppressSync = false } = {}) {
   }
   const updated = { ...existing, ...data, id, updated_at: new Date().toISOString() };
   await db.put('categories', updated);
-  await maybeScheduleSync(suppressSync);
+  if (!suppressSync) notifyChange();
   return updated;
 }
 
@@ -58,5 +52,5 @@ export async function del(id, { suppressSync = false } = {}) {
   const existing = await db.get('categories', id);
   if (existing?.is_system) throw new Error('System categories cannot be deleted');
   await db.delete('categories', id);
-  await maybeScheduleSync(suppressSync);
+  if (!suppressSync) notifyChange();
 }
