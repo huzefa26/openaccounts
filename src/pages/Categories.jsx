@@ -2,8 +2,9 @@ import { useEffect, useState } from 'react';
 import useCategoryStore from '../store/categoryStore';
 import useTransactionStore from '../store/transactionStore';
 import useToastStore from '../store/toastStore';
-import useBalance from '../hooks/useBalance';
+import useCategoryTree from '../hooks/useCategoryTree';
 import CategoryRow from '../components/tables/CategoryRow';
+import CategoryCard from '../components/cards/CategoryCard';
 import CategoryForm from '../components/forms/CategoryForm';
 
 const TYPE_LABELS = {
@@ -25,29 +26,12 @@ export default function Categories() {
   const [deleteError, setDeleteError] = useState(null);
   const [collapsedTypes, setCollapsedTypes] = useState(new Set());
 
+  const { childrenMap, roots, grouped } = useCategoryTree(categories);
+
   useEffect(() => {
     fetchAll();
     fetchTransactions();
   }, []);
-
-  const visible = categories.filter((c) => !c.is_system);
-
-  const childrenMap = {};
-  const roots = [];
-
-  for (const cat of visible) {
-    if (cat.parent_id) {
-      if (!childrenMap[cat.parent_id]) childrenMap[cat.parent_id] = [];
-      childrenMap[cat.parent_id].push(cat);
-    } else {
-      roots.push(cat);
-    }
-  }
-
-  const grouped = {};
-  for (const type of TYPE_ORDER) {
-    grouped[type] = roots.filter((c) => c.type === type);
-  }
 
   function renderCategory(cat, depth = 0) {
     const children = childrenMap[cat.id] || [];
@@ -66,68 +50,16 @@ export default function Categories() {
     );
   }
 
-  function CategoryCard({ category, depth }) {
-    const balance = useBalance(category.id);
-    const indent = depth * 20;
-
-    const balanceDisplay = Object.keys(balance).length > 0
-      ? Object.entries(balance)
-          .map(([currency, amount]) => `${Number(amount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${currency}`)
-          .join(', ')
-      : '—';
-
-    return (
-      <div className="flex items-start justify-between gap-2 px-4 py-3">
-        <div className="flex-1 min-w-0" style={{ marginLeft: `${indent}px` }}>
-          <p className={`text-sm ${depth === 0 ? 'font-semibold text-text-primary' : 'text-text-secondary'}`}>
-            {category.name}
-          </p>
-          <div className="flex flex-wrap gap-x-3 gap-y-0.5 mt-0.5">
-            {category.opening_balance ? (
-              <span className="text-xs text-text-tertiary font-numeric">
-                Opening: {Number(category.opening_balance).toLocaleString()}
-              </span>
-            ) : null}
-            <span className="text-xs text-text-tertiary font-numeric">
-              Balance: {balanceDisplay}
-            </span>
-          </div>
-        </div>
-        <div className="flex items-center gap-1 flex-shrink-0">
-          {!category.is_system && (
-            <>
-              <button
-                onClick={() => { setEditingCategory(category); setShowForm(true); }}
-                className="inline-flex items-center justify-center w-8 h-8 rounded-md text-text-tertiary hover:text-text-primary hover:bg-accent-light transition-colors duration-base"
-                aria-label={`Edit ${category.name}`}
-              >
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" />
-                  <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" />
-                </svg>
-              </button>
-              <button
-                onClick={() => { setDeletingId(category.id); setDeleteError(null); }}
-                className="inline-flex items-center justify-center w-8 h-8 rounded-md text-text-tertiary hover:text-expense hover:bg-expense-bg transition-colors duration-base"
-                aria-label={`Delete ${category.name}`}
-              >
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <polyline points="3 6 5 6 21 6" />
-                  <path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2" />
-                </svg>
-              </button>
-            </>
-          )}
-        </div>
-      </div>
-    );
-  }
-
   function renderCategoryCard(cat, depth = 0) {
     const children = childrenMap[cat.id] || [];
     return (
       <div key={cat.id}>
-        <CategoryCard category={cat} depth={depth} />
+        <CategoryCard
+          category={cat}
+          depth={depth}
+          onEdit={(c) => { setEditingCategory(c); setShowForm(true); }}
+          onDelete={(c) => { setDeletingId(c.id); setDeleteError(null); }}
+        />
         {children
           .sort((a, b) => a.name.localeCompare(b.name))
           .map((child) => renderCategoryCard(child, depth + 1))}
