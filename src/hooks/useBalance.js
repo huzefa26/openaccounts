@@ -24,7 +24,7 @@ export default function useBalance(categoryId) {
     const allIds = [categoryId, ...getDescendantIds(categoryId, categories)];
     const isDebitNormal = DEBIT_NORMAL_TYPES.includes(category.type);
     const openingBalance = category.opening_balance || 0;
-    const homeCurrency = defaultCurrency?.code || 'AED';
+    const homeCurrency = defaultCurrency?.code || '';
 
     const obTxIds = new Set(
       transactions.filter((t) => t.is_opening_balance).map((t) => t.id),
@@ -47,10 +47,12 @@ export default function useBalance(categoryId) {
       }
     }
 
-    if (openingBalance && balanceMap[homeCurrency] !== undefined) {
-      balanceMap[homeCurrency] += openingBalance;
-    } else if (openingBalance) {
-      balanceMap[homeCurrency] = openingBalance;
+    if (homeCurrency && openingBalance) {
+      if (balanceMap[homeCurrency] !== undefined) {
+        balanceMap[homeCurrency] += openingBalance;
+      } else {
+        balanceMap[homeCurrency] = openingBalance;
+      }
     }
 
     return balanceMap;

@@ -6,7 +6,7 @@ const OB_DEBIT_TYPES = ['asset', 'expense'];
 const OB_CREDIT_TYPES = ['liability', 'equity', 'income'];
 
 export async function handleOpeningBalance(category, newBalance, defaultCurrency) {
-  const currency = defaultCurrency?.code || 'AED';
+  const currency = defaultCurrency?.code || '';
 
   const transactions = useTransactionStore.getState().transactions;
   const existingTx = transactions.find(

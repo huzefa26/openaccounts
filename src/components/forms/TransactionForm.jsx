@@ -16,7 +16,7 @@ export default function TransactionForm({ initialTransaction, initialLines, onSu
   const { currencies, defaultCurrency, fetchAll: fetchCurrencies } = useCurrencyStore();
 
   function createRow() {
-    return { id: crypto.randomUUID(), categoryId: '', currency: defaultCurrency?.code || 'AED', amount: '' };
+    return { id: crypto.randomUUID(), categoryId: '', currency: defaultCurrency?.code || '', amount: '' };
   }
   const { createTransaction, updateTransaction, formRestoreState, saveFormRestoreState, markFormRestored, undoRestoreState, clearUndoRestoreState } = useTransactionStore();
 
