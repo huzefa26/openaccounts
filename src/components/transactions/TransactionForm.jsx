@@ -3,7 +3,7 @@ import Input from '../ui/Input';
 import Select from '../ui/Select';
 import CategorySelect from '../ui/CategorySelect';
 import Button from '../ui/Button';
-import BalanceIndicator from './BalanceIndicator';
+import BalanceIndicator from '../ledger/BalanceIndicator';
 import useFormRestore from '../../hooks/useFormRestore';
 import useCategoryStore from '../../store/categoryStore';
 import useCurrencyStore from '../../store/currencyStore';

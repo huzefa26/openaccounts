@@ -2,10 +2,10 @@ import { useEffect, useState, useMemo } from 'react';
 import useTransactionStore from '../store/transactionStore';
 import useCategoryStore from '../store/categoryStore';
 import useCurrencyStore from '../store/currencyStore';
-import LedgerTable from '../components/tables/LedgerTable';
+import LedgerTable from '../components/ledger/LedgerTable';
 import FilterBar from '../components/layout/FilterBar';
 import Modal from '../components/ui/Modal';
-import TransactionForm from '../components/forms/TransactionForm';
+import TransactionForm from '../components/transactions/TransactionForm';
 import { LEDGER_PAGE_SIZE } from '../constants/app';
 
 function defaultFilters() {

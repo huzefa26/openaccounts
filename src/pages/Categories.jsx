@@ -3,9 +3,9 @@ import useCategoryStore from '../store/categoryStore';
 import useTransactionStore from '../store/transactionStore';
 import useToastStore from '../store/toastStore';
 import useCategoryTree from '../hooks/useCategoryTree';
-import CategoryRow from '../components/tables/CategoryRow';
-import CategoryCard from '../components/cards/CategoryCard';
-import CategoryForm from '../components/forms/CategoryForm';
+import CategoryRow from '../components/categories/CategoryRow';
+import CategoryCard from '../components/categories/CategoryCard';
+import CategoryForm from '../components/categories/CategoryForm';
 
 const TYPE_LABELS = {
   asset: 'Assets',

@@ -1,5 +1,5 @@
 import { useEffect, useMemo } from 'react';
-import TransactionForm from '../components/forms/TransactionForm';
+import TransactionForm from '../components/transactions/TransactionForm';
 import useMetrics from '../hooks/useMetrics';
 import useCategoryStore from '../store/categoryStore';
 import useTransactionStore from '../store/transactionStore';

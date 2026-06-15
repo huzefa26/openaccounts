@@ -8,8 +8,8 @@ import { baseCurrencies } from '../constants/baseCurrencies';
 import { TOAST_DURATION_SUCCESS } from '../constants/app';
 import { resetDB } from '../db/index';
 import { deleteFile, findFile } from '../sync/googleDrive';
-import DataAndSyncSection from '../components/sections/DataAndSyncSection';
-import ResetAppFlow from '../components/modals/ResetAppFlow';
+import DataAndSyncSection from '../components/settings/DataAndSyncSection';
+import ResetAppFlow from '../components/settings/ResetAppFlow';
 import Modal from '../components/ui/Modal';
 import Button from '../components/ui/Button';
 
