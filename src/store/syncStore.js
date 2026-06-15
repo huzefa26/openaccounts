@@ -6,6 +6,7 @@ import useTransactionStore from './transactionStore';
 import useCategoryStore from './categoryStore';
 import useCurrencyStore from './currencyStore';
 import useToastStore from './toastStore';
+import { SYNC_DEBOUNCE_MS, TOAST_DURATION_SUCCESS, TOAST_DURATION_ERROR } from '../constants/app';
 
 const useSyncStore = create((set, get) => ({
   status: 'idle',
@@ -36,7 +37,7 @@ const useSyncStore = create((set, get) => ({
           pendingChangeCount: status === 'idle' ? 0 : pendingChangeCount,
         }));
       }
-    }, 30000);
+    }, SYNC_DEBOUNCE_MS);
 
     set({ pendingSyncTimer: timer });
   },
@@ -60,14 +61,14 @@ const useSyncStore = create((set, get) => ({
       useToastStore.getState().addToast({
         message: 'Sync complete.',
         type: 'success',
-        duration: 3000,
+        duration: TOAST_DURATION_SUCCESS,
       });
     } catch (err) {
       set({ status: 'error', error: err.message });
       useToastStore.getState().addToast({
         message: 'Sync failed. Try again.',
         type: 'error',
-        duration: 5000,
+        duration: TOAST_DURATION_ERROR,
       });
     }
   },
@@ -93,7 +94,7 @@ const useSyncStore = create((set, get) => ({
           pendingChangeCount: status === 'idle' ? 0 : pendingChangeCount,
         }));
       }
-    }, 30000);
+    }, SYNC_DEBOUNCE_MS);
 
     set({ pendingChangeCount: newCount, pendingSyncTimer: timer });
   },

@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { TOAST_DURATION_SUCCESS, MAX_VISIBLE_TOASTS } from '../constants/app';
 
 const useToastStore = create((set, get) => ({
   toasts: [],
@@ -9,13 +10,13 @@ const useToastStore = create((set, get) => ({
       id,
       message: toast.message,
       type: toast.type || 'info',
-      duration: toast.type === 'error' ? undefined : (toast.duration || 3000),
+      duration: toast.type === 'error' ? undefined : (toast.duration || TOAST_DURATION_SUCCESS),
       action: toast.action || null,
     };
 
     set((state) => {
       const updated = [...state.toasts, entry];
-      return { toasts: updated.length > 3 ? updated.slice(-3) : updated };
+      return { toasts: updated.length > MAX_VISIBLE_TOASTS ? updated.slice(-MAX_VISIBLE_TOASTS) : updated };
     });
 
     if (entry.type !== 'error' && entry.duration) {

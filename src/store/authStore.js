@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import * as googleAuth from '../sync/googleAuth';
 import useToastStore from './toastStore';
+import { TOAST_DURATION_SUCCESS } from '../constants/app';
 
 const useAuthStore = create((set) => {
   const session = googleAuth.getStoredSession();
@@ -33,7 +34,7 @@ const useAuthStore = create((set) => {
         useToastStore.getState().addToast({
           message: `Signed in as ${result.user.email}.`,
           type: 'success',
-          duration: 3000,
+          duration: TOAST_DURATION_SUCCESS,
         });
       } catch (err) {
         if (err.message === 'ACCESS_DENIED') {
@@ -70,10 +71,10 @@ const useAuthStore = create((set) => {
         error: null,
       });
       useToastStore.getState().clearAll();
-      useToastStore.getState().addToast({
-        message: 'Signed out.',
-        type: 'info',
-        duration: 3000,
+        useToastStore.getState().addToast({
+          message: 'Signed out.',
+          type: 'info',
+          duration: TOAST_DURATION_SUCCESS,
       });
     },
 

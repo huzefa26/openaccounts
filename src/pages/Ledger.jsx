@@ -6,8 +6,7 @@ import LedgerTable from '../components/tables/LedgerTable';
 import FilterBar from '../components/layout/FilterBar';
 import Modal from '../components/ui/Modal';
 import TransactionForm from '../components/forms/TransactionForm';
-
-const PAGE_SIZE = 20;
+import { LEDGER_PAGE_SIZE } from '../constants/app';
 
 function defaultFilters() {
   return {
@@ -95,9 +94,9 @@ export default function Ledger() {
     });
   }, [sorted, lines, filters, categories]);
 
-  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const totalPages = Math.max(1, Math.ceil(filtered.length / LEDGER_PAGE_SIZE));
   const safePage = Math.min(page, totalPages);
-  const paginated = filtered.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
+  const paginated = filtered.slice((safePage - 1) * LEDGER_PAGE_SIZE, safePage * LEDGER_PAGE_SIZE);
 
   function handleEdit(tx, txLines) {
     setEditingTx(tx);
@@ -136,7 +135,7 @@ export default function Ledger() {
         totalPages={totalPages}
         onPageChange={setPage}
         totalItems={filtered.length}
-        pageSize={PAGE_SIZE}
+        pageSize={LEDGER_PAGE_SIZE}
       />
 
       {editingTx && (

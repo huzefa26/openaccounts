@@ -5,6 +5,7 @@ import useAuthStore from '../store/authStore';
 import useToastStore from '../store/toastStore';
 import { exportAllData } from '../utils/export';
 import { baseCurrencies } from '../constants/baseCurrencies';
+import { TOAST_DURATION_SUCCESS } from '../constants/app';
 import { resetDB } from '../db/index';
 import { deleteFile, findFile } from '../sync/googleDrive';
 import Modal from '../components/ui/Modal';
@@ -302,7 +303,7 @@ export default function Profile() {
       useToastStore.getState().addToast({
         message: 'Export downloaded.',
         type: 'success',
-        duration: 3000,
+        duration: TOAST_DURATION_SUCCESS,
       });
     } catch (err) {
       console.error('Export failed:', err);

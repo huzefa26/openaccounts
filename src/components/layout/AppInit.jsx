@@ -4,6 +4,7 @@ import { seedFirstRun } from '../../db/seed';
 import { STORE_NAMES, buildSnapshot, populateFromSnapshot } from '../../db/snapshot';
 import { findFile, readFile, createFile } from '../../sync/googleDrive';
 import * as dbSettings from '../../db/settings';
+import { APP_INIT_TIMEOUT_MS, APP_INIT_COMPLETE_DELAY_MS } from '../../constants/app';
 
 const STEPS = {
   checking: 'Checking Google Drive...',
@@ -33,7 +34,7 @@ export default function AppInit({ onComplete }) {
 
   const run = useCallback(async () => {
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 8000);
+    const timeout = setTimeout(() => controller.abort(), APP_INIT_TIMEOUT_MS);
 
     try {
       const db = await initDB();
@@ -56,7 +57,7 @@ export default function AppInit({ onComplete }) {
       clearTimeout(timeout);
       await dbSettings.set('last_synced_at', new Date().toISOString());
       setStatus(STEPS.done);
-      setTimeout(() => onComplete(), 300);
+      setTimeout(() => onComplete(), APP_INIT_COMPLETE_DELAY_MS);
     } catch (err) {
       clearTimeout(timeout);
       if (err.name === 'AbortError') {

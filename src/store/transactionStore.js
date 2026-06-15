@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import * as dbTransactions from '../db/transactions';
 import * as dbLines from '../db/transactionLines';
 import useToastStore from './toastStore';
+import { TOAST_DURATION_SUCCESS, UNDO_EXPIRY_MS } from '../constants/app';
 
 const useTransactionStore = create((set, get) => ({
   transactions: [],
@@ -49,7 +50,7 @@ const useTransactionStore = create((set, get) => ({
         id: toastId,
         message: 'Transaction saved.',
         type: 'success',
-        duration: 5000,
+        duration: UNDO_EXPIRY_MS,
         action: {
           label: 'Undo',
           onClick: async () => {
@@ -85,7 +86,7 @@ const useTransactionStore = create((set, get) => ({
         if (state.lastSavedTransaction?.transaction?.id === tx.id) {
           set({ lastSavedTransaction: null });
         }
-      }, 5000);
+      }, UNDO_EXPIRY_MS);
     }
 
     return payload;
@@ -108,7 +109,7 @@ const useTransactionStore = create((set, get) => ({
       useToastStore.getState().addToast({
         message: 'Transaction updated.',
         type: 'success',
-        duration: 3000,
+        duration: TOAST_DURATION_SUCCESS,
       });
     }
     return { transaction: tx, lines: updatedLines };
@@ -125,7 +126,7 @@ const useTransactionStore = create((set, get) => ({
       useToastStore.getState().addToast({
         message: 'Transaction deleted.',
         type: 'success',
-        duration: 3000,
+        duration: TOAST_DURATION_SUCCESS,
       });
     }
   },

@@ -6,6 +6,7 @@ import Button from '../ui/Button';
 import useCategoryStore from '../../store/categoryStore';
 import useCurrencyStore from '../../store/currencyStore';
 import useToastStore from '../../store/toastStore';
+import { TOAST_DURATION_SUCCESS } from '../../constants/app';
 import { handleOpeningBalance } from '../../utils/accounting';
 
 const TYPE_OPTIONS = [
@@ -77,7 +78,7 @@ export default function CategoryForm({ category, onClose }) {
       useToastStore.getState().addToast({
         message: isEdit ? 'Category saved.' : 'Category created.',
         type: 'success',
-        duration: 3000,
+        duration: TOAST_DURATION_SUCCESS,
       });
     } catch (err) {
       setErrors({ submit: err.message });
