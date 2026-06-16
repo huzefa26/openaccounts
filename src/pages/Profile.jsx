@@ -166,7 +166,7 @@ function CurrenciesSection({ currencies, onAdd, onRemove, defaultCurrency }) {
       <div className="border border-border rounded-lg p-5">
         <div className="flex items-center justify-between mb-3">
           <h2 className="text-xs font-semibold text-text-secondary uppercase tracking-wider">Currencies</h2>
-          <Button variant="ghost" onClick={() => setShowAddModal(true)}>Add Currency</Button>
+          <Button variant="ghost" onClick={() => setShowAddModal(true)} className="active:scale-95 transition-transform">Add Currency</Button>
         </div>
 
         {currencies.length === 0 ? (
