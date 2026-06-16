@@ -818,7 +818,7 @@ The persistent sync-started toast is replaced (not stacked) by the sync complete
 **Work:**
 
 *First-load blank screen:*
-Add a CSS spinner inside `<div id="root">` in `index.html`. It must be visible immediately — no JavaScript required to render it. Style it using the app's teal primary colour (`#0D9488`). React's first render replaces the `root` contents, removing the spinner automatically.
+Add a CSS spinner inside `<div id="root">` in `index.html`. It must be visible immediately — no JavaScript required to render it. React's first render replaces the `root` contents, removing the spinner automatically.
 
 *Base CoA descriptions:*
 In `baseCoa.js`, add `description` fields to two entries:
