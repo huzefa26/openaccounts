@@ -143,6 +143,10 @@ function CurrenciesSection({ currencies, onAdd, onRemove, defaultCurrency }) {
       .filter((c) => c.code.toLowerCase().includes(search.toLowerCase()) || c.name.toLowerCase().includes(search.toLowerCase()));
   }, [activeCodes, search]);
 
+  const anyRemaining = useMemo(() => {
+    return baseCurrencies.some((c) => !activeCodes.has(c.code));
+  }, [activeCodes]);
+
   function handleAdd(code) {
     const found = baseCurrencies.find((c) => c.code === code);
     if (found) {
@@ -166,7 +170,9 @@ function CurrenciesSection({ currencies, onAdd, onRemove, defaultCurrency }) {
       <div className="border border-border rounded-lg p-5">
         <div className="flex items-center justify-between mb-3">
           <h2 className="text-xs font-semibold text-text-secondary uppercase tracking-wider">Currencies</h2>
-          <Button variant="ghost" onClick={() => setShowAddModal(true)} className="active:scale-95 transition-transform">Add Currency</Button>
+          {anyRemaining && (
+            <Button variant="ghost" onClick={() => setShowAddModal(true)} className="active:scale-95 transition-transform">Add Currency</Button>
+          )}
         </div>
 
         {currencies.length === 0 ? (
