@@ -19,13 +19,14 @@ export default function BalanceIndicator({ balances, animating, onAnimEnd }) {
             className={`flex items-center gap-1.5 text-sm ${lineAnimClass}`}
           >
             <span className="text-text-secondary">Credits</span>
+            <span className="text-xs font-numeric text-text-tertiary">{code}</span>
             <span className="font-numeric text-text-primary">{credits.toFixed(2)}</span>
             <span className={`font-numeric text-base leading-none ${symbolAnimClass} ${balanced ? 'text-income' : 'text-expense'}`}>
               {balanced ? '=' : '\u2260'}
             </span>
             <span className="text-text-secondary">Debits</span>
-            <span className="font-numeric text-text-primary">{debits.toFixed(2)}</span>
             <span className="text-xs font-numeric text-text-tertiary">{code}</span>
+            <span className="font-numeric text-text-primary">{debits.toFixed(2)}</span>
           </div>
         );
       })}
