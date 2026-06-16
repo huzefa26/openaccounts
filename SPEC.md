@@ -45,23 +45,29 @@
 ```
 src/
 ├── components/
-│   ├── ui/                  # Reusable primitives: Button, Input, Modal, Select, MultiSelect, Toast, ToastContainer, CategorySelect.
-│   ├── layout/              # AppShell, Navbar (desktop), BottomNav (mobile)
-│   ├── forms/               # TransactionForm, CategoryForm
-│   └── tables/              # LedgerTable, CategoryTable
+│   ├── ui/                  # Reusable primitives: Button, Input, Modal, Select, MultiSelect, Toast, ToastContainer, CategorySelect
+│   ├── layout/              # AppShell, Navbar, MobileTopBar, BottomNav, AppInit, AvatarWithSync, FilterBar
+│   ├── transactions/        # TransactionForm
+│   ├── categories/          # CategoryForm, CategoryRow, CategoryCard
+│   ├── ledger/              # LedgerTable, BalanceIndicator
+│   └── settings/            # DataAndSyncSection, ResetAppFlow
 ├── pages/
 │   ├── Home.jsx
 │   ├── Ledger.jsx
 │   ├── Analytics.jsx        # Placeholder only (future feature)
 │   ├── Categories.jsx
-│   └── Profile.jsx
+│   ├── Profile.jsx
+│   └── SignInScreen.jsx
 ├── db/
 │   ├── index.js             # idb initialisation + upgrade logic
 │   ├── categories.js        # IndexedDB CRUD for categories store
 │   ├── transactions.js      # IndexedDB CRUD for transactions store
 │   ├── transactionLines.js  # IndexedDB CRUD for transaction_lines store
 │   ├── currencies.js        # IndexedDB CRUD for currencies store
-│   └── settings.js          # IndexedDB CRUD for settings store
+│   ├── settings.js          # IndexedDB CRUD for settings store
+│   ├── seed.js              # First-run seeding (base CoA + currencies + settings)
+│   ├── snapshot.js          # Build/populate full-database snapshots
+│   └── sync.js              # Change notification hub for auto-sync
 ├── sync/
 │   ├── googleAuth.js        # GIS token client: init, sign-in, sign-out, token checks
 │   ├── googleDrive.js       # Drive REST API: read/write openaccounts.json in appData
@@ -73,19 +79,23 @@ src/
 │   ├── settingsStore.js     # Zustand: app-wide settings
 │   ├── authStore.js         # Zustand: GIS auth state
 │   ├── syncStore.js         # Zustand: sync state (in-progress, last-synced, error), timestamp
-|   └── toastStore.js        # Zustand: toast queue
+│   └── toastStore.js        # Zustand: toast queue
 ├── hooks/
 │   ├── useBalance.js        # Net running balance for a category (multi-currency aware)
-│   └── useMetrics.js        # Home page metrics computations
+│   ├── useMetrics.js        # Home page metrics computations
+│   ├── useCategoryTree.js   # Category tree hierarchy helpers
+│   ├── useClickOutside.js   # Detect clicks outside a ref
+│   └── useFormRestore.js    # Save/restore TransactionForm state across navigation
 ├── utils/
-│   ├── accounting.js        # Per-currency debit=credit validation, balance formulas
-│   ├── export.js            # Full JSON dump of all IndexedDB stores
-│   └── uuid.js              # crypto.randomUUID() wrapper
+│   ├── accounting.js        # Per-currency debit=credit validation, balance formulas, opening balance logic
+│   └── export.js            # Full JSON dump of all IndexedDB stores
 ├── constants/
+│   ├── app.js               # App-wide constants (sync debounce, toast durations, page size)
 │   ├── baseCoa.js           # The 22 base Chart of Accounts entries (see Section 6)
 │   └── baseCurrencies.js    # Common currency list with codes, names, symbols
 ├── App.jsx                  # Router setup
-└── main.jsx                 # Vite entry point
+├── main.jsx                 # Vite entry point
+└── index.css                # Tailwind directives + CSS custom properties
 ```
 
 ---
@@ -429,7 +439,7 @@ Multi-line transactions display stacked rows in From/To cells (one sub-row per l
 |---|---|
 | Name | Required. Must be unique across all categories (case-insensitive). If a duplicate name is detected on save, show an inline error: *"A category with this name already exists."* Do not submit |
 | Opening Balance | Displayed if non-zero |
-| Net Balance | Per-currency running balance (§5.3). Shown as a currency-keyed list. Dash for leaf expense/income categories where lifetime totals are not meaningful |
+| Net Balance | Per-currency running balance (§5.3). Shown as a currency-keyed list. Dash (`-`) for leaf expense/income categories where lifetime totals are not meaningful |
 | Edit | Icon button → Category Form |
 | Delete | Icon button → deletion rules (§5.4) |
 
@@ -655,7 +665,7 @@ This migration runs once and never again.
 | 11 | Monospaced numbers — register `font-numeric` in Tailwind config, apply to all amounts, balances, and dates app-wide | ✅ Complete |
 | 12 | `CategorySelect` component — searchable combobox built on `cmdk` following the shadcn Command/Combobox pattern; grouped by type, children indented, auto-focus top match, keyboard navigation; replace all category inputs in `TransactionForm` | ✅ Complete |
 | 13 | Transaction form enhancements — keyboard shortcuts (`Ctrl+S`, `Tab`, `Enter`, `Escape`); zero-balance equality indicator with animation | ✅ Complete |
-| 14 | Toast notification system — `toastStore`, `Toast`, `ToastContainer`; all event wiring; Undo for transaction save; clear on navigation and sign-out | ✅ Complete |
+| 14 | Toast notification system — `toastStore`, `Toast`, `ToastContainer`; all event wiring; Undo backend logic (action link disabled — see Known Issue #13); clear on navigation and sign-out | ✅ Complete |
 | 15 | Mobile & UX bug fixes — Ledger and Categories card views on mobile; transaction form row widths (CategorySelect `flex-1`, fixed currency + amount widths) and two-line mobile layout; date input full width matching other inputs; BottomNav smooth scroll hide/restore with iOS safe-area; mobile sticky top bar layout shell (consumed by Phase 16 for sync wiring); Profile currencies button press animation and popup elevation; page headers removed (redundant with MobileTopBar); Google permissions denied error state and retry; `index.html` first-load spinner; base CoA descriptions for AR and AP | ✅ Complete |
 | 16 | Auto sync — `syncStore` additions (`pendingChangeCount`, `pendingSyncTimer`, `schedulePendingSync`, `decrementAndMaybeCancel`, `syncNow`); wire all DB writes (`transactions`, `categories`, `currencies`) to increment + `schedulePendingSync` with `suppressSync` option for undo; wire undo to `decrementAndMaybeCancel`; manual sync buttons (desktop navbar + mobile top bar) call `syncNow()`; Profile sync button switched to `syncNow()`; timer identity check guards writes-during-sync race; `visibilitychange` hook syncs pending writes on tab hide | ✅ Complete |
 
@@ -667,19 +677,16 @@ Bugs and regressions identified during Phase 15 testing. These are tracked for r
 
 | # | Issue | Priority | Notes |
 |---|-------|----------|-------|
-| 1 | BottomNav scroll janky on Android | Medium | Hide/restore transition not smooth — investigate `passive` scroll handler timing |
-| 2 | BottomNav iOS safe area when hidden | Medium | When BottomNav hides, verify `env(safe-area-inset-bottom)` still prevents system bar overlap |
-| 3 | Drive API 403 — insufficient auth scopes | High | "Try Again" on 403 leads to dead end. Need to detect 403, clear token, and re-initiate OAuth with full scopes |
-| 4 | Categories console warning — missing `key` prop | Low | `Fragment <>` usage in `Categories.jsx` list rendering without keys |
-| 5 | "Add Currency" visible when all currencies added | Low | Hide or disable the button when no currencies remain in `baseCurrencies.js` |
-| 6 | Toast appears above BottomNav | Medium | `ToastContainer` fixed positioning conflicts with `BottomNav` on mobile |
-| 7 | Profile reset modal overlay not dimming | Low | Nested modals during reset flow may not apply `bg-overlay` correctly |
-| 8 | Avatar sync ring animation visual polish | Low | Spinning ring on `AvatarWithSync` during sync — consider less prominent treatment |
-| 9 | Profile image broken on re-navigation | Medium | Image fails to load after navigating away and back; investigate `referrerpolicy` or cache behaviour |
-| 10 | "Add Row" button retains `:focus` on mobile | Low | After tapping "Add Row", the button stays visually focused; use `:focus-visible` |
-| 11 | Delete button alignment on mobile | Low | Push delete button to far-right of line 2 with a flex spacer |
-| 12 | Categories "New Category" button placement on mobile | Medium | Move to full-width fixed bottom position on mobile; keep top-right on desktop |
-| 13 | Undo (transaction save) disabled | Low | Button hidden in Toast. Backend logic (`lastSavedTransaction`, 5s auto-clear) kept intact. Re-enable once auto-sync compatibility is validated: (1) undo must not schedule a sync, (2) undo must correctly decrement `pendingChangeCount`, (3) undo must restore form state without data races |
+| 1 | Drive API 403 — insufficient auth scopes | High | "Try Again" on 403 leads to dead end. Need to detect 403, clear token, and re-initiate OAuth with full scopes |
+| 2 | Categories console warning — missing `key` prop | Low | `Fragment <>` usage in `Categories.jsx` list rendering without keys |
+| 3 | Toast appears above BottomNav | Medium | `ToastContainer` fixed positioning conflicts with `BottomNav` on mobile |
+| 4 | Profile reset modal overlay not dimming | Low | Nested modals during reset flow may not apply `bg-overlay` correctly |
+| 5 | Avatar sync ring animation visual polish | Low | Spinning ring on `AvatarWithSync` during sync — consider less prominent treatment |
+| 6 | Profile image broken on re-navigation | Medium | Image fails to load after navigating away and back; investigate `referrerpolicy` or cache behaviour |
+| 7 | "Add Row" button retains `:focus` on mobile | Low | After tapping "Add Row", the button stays visually focused; use `:focus-visible` |
+| 8 | Delete button alignment in TransactionForm's rows on mobile | Low | Push delete button to far-right of line 2 with a flex spacer |
+| 9 | Undo (transaction save) disabled | Low | Button hidden in Toast. Backend logic (`lastSavedTransaction`, 5s auto-clear) kept intact. Re-enable once auto-sync compatibility is validated: (1) undo must not schedule a sync, (2) undo must correctly decrement `pendingChangeCount`, (3) undo must restore form state without data races |
+| 10 | Leaf income/expense net balance dash | Low | CategoryRow and CategoryCard always show the computed net balance. SPEC §7.4 requires a dash (`—`) for leaf expense/income categories where lifetime totals are not meaningful |
 
 ---
 
