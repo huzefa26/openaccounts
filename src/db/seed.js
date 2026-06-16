@@ -52,6 +52,11 @@ export async function seedFirstRun(db) {
     value: JSON.stringify('light'),
     updated_at: now,
   });
+  await setStore.put({
+    key: 'app_version',
+    value: JSON.stringify('2'),
+    updated_at: now,
+  });
 
   await tx.done;
 }

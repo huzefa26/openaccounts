@@ -56,6 +56,7 @@ export default function AppInit({ onComplete }) {
 
       clearTimeout(timeout);
       await dbSettings.set('last_synced_at', new Date().toISOString());
+      await dbSettings.set('app_version', '2');
       setStatus(STEPS.done);
       setTimeout(() => onComplete(), APP_INIT_COMPLETE_DELAY_MS);
     } catch (err) {
