@@ -1,5 +1,5 @@
 # OpenAccounts — Project Specification
-> **Version:** 1.6 | **Status:** Active
+> **Version:** 1.7 | **Status:** Active
 > This file is the single source of truth for all agent sessions. Read it in full before every session. Update it at the end of every session to reflect decisions made and work completed.
 
 ---
@@ -20,6 +20,7 @@
 | Framework | React 18 (functional components + hooks only) |
 | Styling | Tailwind CSS v3 (utility classes only — no inline styles) |
 | cmdk | Searchable combobox primitive |
+| Recharts | Charting library for analytics |
 | Build tool | Vite |
 | Routing | React Router v6 |
 | State management | Zustand |
@@ -37,6 +38,43 @@
 - No class components — functional components only
 - No Redux, MobX, or any state library other than Zustand
 - Do not touch files outside the current session's declared scope
+
+### 2.1 App-wide constants
+
+These are defined in `src/constants/app.js`:
+
+| Constant | Value | Used in |
+|---|---|---|
+| `SYNC_DEBOUNCE_MS` | 30000 | §9.3 auto-sync |
+| `TOAST_DURATION_SUCCESS` | 3000 | §14 toasts |
+| `TOAST_DURATION_INFO` | 3000 | §14 toasts |
+| `TOAST_DURATION_ERROR` | 5000 | §14 toasts |
+| `MAX_VISIBLE_TOASTS` | 3 | §14 toasts |
+| `UNDO_EXPIRY_MS` | 5000 | §14 undo |
+| `APP_INIT_TIMEOUT_MS` | 8000 | §8.3 AppInit |
+| `APP_INIT_COMPLETE_DELAY_MS` | 300 | §8.3 AppInit |
+| `LEDGER_PAGE_SIZE` | 20 | §5.6 Ledger |
+
+### 2.2 Design tokens
+
+These are defined in `tailwind.config.js`:
+
+| Token | Value | Usage |
+|---|---|---|
+| `font-ui` | Plus Jakarta Sans, -apple-system, sans-serif | All UI text |
+| `font-numeric` | Geist Mono, Roboto Mono, monospace | Amounts, balances, dates (applied to every instance app-wide) |
+| `shadow-pop` | Custom elevated shadow | Dropdowns, popups |
+| `color.accent` | #1E3A5F | Primary accent, active states |
+| `color.bg` | Page background (light/dark variants) | Body |
+| `color.surface` | Card/panel background | Cards, modals |
+| `color.border` | Divider and input borders | Throughout |
+| `color.text.primary` | Main text | Body copy |
+| `color.text.muted` | Secondary text | Labels, metadata |
+| `color.income` | Emerald-based token | Income indicators |
+| `color.expense` | Amber-based token | Expense indicators |
+| `color.success` | Green-based token | Success states |
+| `color.error` | Rose-based token | Error states |
+| `color.warning` | Amber-based token | Warning states |
 
 ---
 
@@ -103,7 +141,7 @@ src/
 ## 4. Data Model (IndexedDB)
 
 Database name: `openaccounts_db`
-Current schema version: `2`
+Current schema version: `3`
 
 All records use ISO 8601 strings for timestamps (`created_at`, `updated_at`). All IDs are UUIDs generated via `crypto.randomUUID()`.
 
@@ -157,18 +195,21 @@ All records use ISO 8601 strings for timestamps (`created_at`, `updated_at`). Al
 
 **Index:** `transaction_id` (for fetching all lines of a transaction)
 
+*Transaction lines are always written as part of a transaction CRUD operation in `transactions.js`, never independently. Therefore `transactionLines.js` does not call `notifyChange()` — doing so would double-count the sync trigger.*
+
 ---
 
 ### 4.4 `currencies` store
 
 | Field | Type | Notes |
 |---|---|---|
-| `code` | string | Primary key. ISO 4217 code, e.g. `"AED"` |
+| `code` | string | Primary key. ISO 4217 code, e.g. `"AED"`. 3 letters only. |
 | `name` | string | E.g. `"UAE Dirham"` |
-| `symbol` | string | E.g. `"د.إ"` |
-| `is_default` | boolean | Exactly one currency must have this as true at all times |
+| `is_default` | boolean | Exactly one must be true at all times |
 | `created_at` | string | ISO timestamp |
 | `updated_at` | string | ISO timestamp |
+
+*Schema version bumped to `3`. Migration: strip `symbol` field from all existing currency records in the upgrade handler in `db/index.js`.*
 
 ---
 
@@ -188,6 +229,8 @@ All records use ISO 8601 strings for timestamps (`created_at`, `updated_at`). Al
 | `last_synced_at` | string | ISO timestamp of last successful Drive sync |
 | `theme` | string | `light` \| `dark`. Mirrors `localStorage.oa_theme` |
 | `duplicate_cleanup_complete` | boolean | True once the one-time duplicate categories cleanup migration has run. See §11 |
+
+*`settings.js` does not call `notifyChange()`. Settings changes (theme, last_synced_at, app_version) are internal bookkeeping. Specifically, `last_synced_at` is written by the sync engine itself — triggering a new sync from a settings write would create an infinite loop.*
 
 ---
 
@@ -219,7 +262,7 @@ When a user sets (or modifies) an opening balance on a category:
 
 **Transaction generated:**
 
-The opening balance transaction uses the **home/default currency** at the time it is created.
+The opening balance transaction uses the **default currency** at the time it is created.
 
 | Account type | Debit | Credit |
 |---|---|---|
@@ -247,12 +290,12 @@ Normal balance side per type:
 
 For each currency C:
   if normal_side = "debit":
-    balance[C] = opening_balance (home currency only) + SUM(debits in C) - SUM(credits in C)
+    balance[C] = opening_balance (default currency only) + SUM(debits in C) - SUM(credits in C)
   if normal_side = "credit":
-    balance[C] = opening_balance (home currency only) + SUM(credits in C) - SUM(debits in C)
+    balance[C] = opening_balance (default currency only) + SUM(credits in C) - SUM(debits in C)
 ```
 
-Note: `opening_balance` is recorded in the home currency. For multi-currency accounts, the opening balance applies only to the home currency bucket.
+Note: `opening_balance` is recorded in the default currency. For multi-currency accounts, the opening balance applies only to the default currency bucket.
 
 ---
 
@@ -285,7 +328,9 @@ Load all transactions + lines from IndexedDB
   → Paginate: slice to page × PAGE_SIZE
 ```
 
-`PAGE_SIZE = 20` (constant, no selector).
+Pagnination size constant `PAGE_SIZE` is defined in `src/constants/app.js`.
+
+*The filter bar is implemented as `FilterBar.jsx`. On mobile it is collapsed by default and shows a `!` badge on the toggle button when any filters are active.*
 
 ---
 
@@ -350,7 +395,13 @@ Active route is highlighted on text links. No nested routing.
 
 *BottomNav scroll behaviour:* Hides on scroll down, restores on scroll up. Transition: `300ms ease` — not instantaneous. Applies on both Android and iOS. iOS: add `padding-bottom: env(safe-area-inset-bottom)` to clear the system home bar.
 
-*Desktop navbar:* Add a sync icon button (circular arrows) to the right section of the navbar, left of the avatar. Clicking it triggers an immediate sync, bypassing the debounce timer.
+*Desktop navbar:* Add a sync icon button (circular arrows) to the right section of the navbar, left of the avatar. Clicking it triggers an immediate sync, bypassing the debounce timer. While it is syncing, it shows a rotation animation.
+
+*User Avatar:* Displays the profile picture of the user available from their Google account. There are three overlay states on the avatar:
+- **Syncing:** amber spinning ring — **removed** (the sync icon button adjacent to the avatar already shows the spinner animation; the ring is redundant and visually noisy)
+- **Error:** small amber `!` badge, persists until next successful sync
+- **Success:** green checkmark badge, auto-dismisses after 3 seconds
+- **Idle:** no overlay
 
 ---
 
@@ -362,12 +413,26 @@ Active route is highlighted on text links. No nested routing.
 
 | Field | Type | Rules |
 |---|---|---|
-| Date | Date picker | Default: today (`YYYY-MM-DD`) |
+| Date | Date picker | Default: today (`YYYY-MM-DD`). Applied `w-full` to match Description and Notes width. |
 | Description | Text input | Required |
 | From (credits) | Dynamic rows | Dynamic rows. Min 1 row. Each row: `CategorySelect` component · Currency dropdown · Amount input. Add row button. Delete row button (disabled when only 1 row remains) |
 | To (debits) | Dynamic rows | Same structure as From |
 | Notes | Textarea | Optional |
 | Save | Button | Disabled until per-currency invariant is met |
+
+**CategorySelect component** (used for each From/To row's category picker):
+
+A searchable combobox built on `cmdk` following the shadcn Command/Combobox pattern:
+
+- **Trigger:** Shows the selected category name (no indentation). Placeholder when empty.
+- **Popover:** Opens on trigger click with search input auto-focused.
+- **Search:** Filters all options by substring match (case-insensitive) across both parent and child category names.
+- **Auto-focus:** The top matching result is automatically highlighted on open and on each keystroke, so pressing `Enter` immediately selects it.
+- **Grouping:** Options are grouped under their account type label (Assets, Liabilities, Income, Expenses, Equity). Group labels are non-selectable headers.
+- **Order:** Within each group, root categories first, children indented below with left padding and slightly muted weight.
+- **System categories:** `is_system: true` categories (Opening Balance Equity) are never shown.
+- **Empty state:** If search produces no results, show: *"No categories found."*
+- **Keyboard:** `↑`/`↓` to move focus (wraps within results), `Enter` to select focused option and close, `Escape` to close without selecting and return focus to trigger.
 
 On mobile (`< md`), each From/To row splits into two lines: CategorySelect (full width) on line 1, Currency + Amount + Delete button inline on line 2. Desktop keeps a single inline row.
 
@@ -377,9 +442,15 @@ On mobile (`< md`), each From/To row splits into two lines: CategorySelect (full
 - `Tab` — logical field order: Date → Description → From rows (Category → Currency → Amount per row) → To rows → Notes → Save
 - `Escape` — closes the `CategorySelect` popover if open; closes any modal if open
 
+*Form state persistence: `useFormRestore` saves the form's current state to `transactionStore.formRestoreState` on unmount (when the user navigates away from Home). On remount, if `formRestoreState` is set, it is dispatched as a `RESTORE` action to refill the form. The undo path uses a separate `transactionStore.undoRestoreState` field, which when set triggers a `RESTORE` dispatch independently of navigation.*
+
 Below From and To sections: A per-currency equality indicator. Format: `Credits AED 100.00 = Debits AED 100.00`. One line per currency. Uses `font-numeric` for amounts. Unbalanced state: `≠` sign, red/amber colour. Balanced state: `=` sign, green colour, with a one-time pulse animation and a `≠` → `=` fade-cross transition on each transition to balanced. Hidden entirely when no amounts have been entered.
 
 On Save: write transaction + all lines to IndexedDB. Update Zustand stores. Reset form (today's date, cleared fields, 1 row each side).
+
+**Undo (transaction save only):** After a transaction is saved, `transactionStore` stores the full payload of the just-saved transaction + lines as `lastSavedTransaction`. The success toast message is *"Transaction saved"* with an *"Undo"* action link. Clicking Undo: hard-deletes the saved transaction and its lines, restores the form to its pre-save state, dismisses the toast. After 5 seconds (`UNDO_EXPIRY_MS`): toast auto-dismisses, `lastSavedTransaction` is cleared. No undo is offered for edits or deletes — those are final.
+
+The undo delete operation must not call `schedulePendingSync()` and must not increment `pendingChangeCount`. It must call `syncStore.decrementAndMaybeCancel()` instead. *Known Issue #9: The Undo button is currently hidden in the Toast; the backend logic is kept intact. Re-enable only after auto-sync compatibility is fully validated.*
 
 **Metrics strip** — 3 cards:
 - *Total Expenses This Month:* Sum of all debit amounts on `expense`-type transaction lines for the current calendar month, grouped by currency. Show per-currency if multiple.
@@ -429,7 +500,14 @@ Multi-line transactions display stacked rows in From/To cells (one sub-row per l
 
 ### 7.4 Categories page (`/categories`)
 
-**Header:** "New Category" button only (right-aligned). Page title is shown by MobileTopBar.
+**Header:** a horizontal bar containing a search input (left/centre) and a "New Category" button (right-aligned). Page title is shown by MobileTopBar.
+
+Header Search behaviour:
+- Search input filters the category list in real-time as the user types
+- Searches across: name, description, and account type
+- Matching is case-insensitive substring
+- Account type groups with no matching categories are hidden entirely
+- When the search is cleared, the full grouped list is restored
 
 **List layout:** Grouped by `type` (section header per type in order: Asset → Liability → Income → Expense → Equity). Within each type, root categories are listed; their children are indented beneath them.
 
@@ -444,6 +522,8 @@ Multi-line transactions display stacked rows in From/To cells (one sub-row per l
 | Delete | Icon button → deletion rules (§5.4) |
 
 **Mobile Layout (`< md`):** The table is replaced by a card list. Each category card shows Name (bold for roots, indented label for children), Opening Balance if non-zero, Net Balance, and Edit/Delete icons. Account type group headers remain as full-width section dividers.
+
+On `md+`, `CategoryRow` (desktop `<tr>`) component is used. On `< md`, `CategoryCard` (mobile card) component is used. Both use `useBalance()` for net balance and `useCategoryTree()` for hierarchy.
 
 **Category Form (modal):**
 
@@ -468,32 +548,113 @@ On edit where `opening_balance` changed: re-run opening balance logic (§5.2).
 - Google profile photo + display name + email (from GIS user info)
 - Logout button — clears auth tokens from localStorage, resets `authStore`, redirects to sign-in state
 
-**Home Currency**
+**Default Currency**
 - Display current default currency
 - "Change" opens a dropdown to select from the user's active currencies
 
 **Currencies**
-- List of active currencies (code + name + symbol)
-- "Add Currency" — opens a searchable dropdown of all currencies (from `baseCurrencies.js`)
+- List of active currencies (code + name)
+- "Add Currency" — opens a searchable dropdown of all currencies (from `baseCurrencies.js` + user defined) and a *"Define custom currency"* option at the bottom.
 - "Add Currency" button: active press state — `active:scale-95` with `transition-transform`.
 - Currency search popup: solid background, visible border, and `shadow-pop` drop shadow to visually separate it from the page behind it.
 - Delete icon per row (cannot delete the default currency; show tooltip)
+- "Define custom currency" opens a form: Code (3 letters, validated as not already existing), Name (required), "Save" button that initiates the validation and saves the custom currency if validated, and a "Cancel" button to close the form.
 
 **Data & Sync**
 - "Sync with Google Drive" button — triggers sync engine (§9)
 - Last synced timestamp (from `syncStore.lastSynced`)
-- Sync status indicator: idle / syncing / error
+- Sync status indicator:
+  - `idle`: "Ready"
+  - `syncing`: "Syncing…" with spinner
+  - `error`: "Sync failed" with last attempt time
 - "Export Data" button — triggers JSON export (§10)
+
+**Danger Zone**
+- A clearly delineated section labelled "Danger Zone" at the bottom of the Profile page. Contains one action: **Reset App** button (red, destructive styling).
+- `ResetAppFlow.jsx` implements a 3-step guarded confirmation flow triggered by this button:
+  1. Step 1 — Warning screen:
+  *"This will permanently delete all your data, including your Google Drive backup. This cannot be undone."*
+  Button: "Continue"
+  2. Step 2 — Type to confirm:
+  User must type the word `delete` into an input field exactly.
+  Button: "Confirm" (disabled until input matches)
+  3. Step 3 — Final confirmation:
+  User must type `i am sure` into an input field exactly.
+  Button: "Reset App" (disabled until input matches)
+- On final confirm, `Profile.jsx::handleReset()` executes in sequence:
+  1. `resetDB()` — calls `indexedDB.deleteDatabase('openaccounts_db')`
+  2. `deleteFile(fileId)` — calls `DELETE /drive/v3/files/{fileId}` via `googleDrive.js`. Accepts 204 (deleted) and 404 (already gone) as success
+  3. Signs out via `authStore.signOut()`
+  4. User is returned to the sign-in screen
 
 ---
 
 ### 7.6 Analytics page (`/analytics`)
 
-Placeholder only. Display: "Analytics coming soon." No logic to implement.
+The Analytics page provides financial insights via Recharts. All charts share one global time range filter. Default range: **Last 6 months**. Range options: This Month · Last 3 Months · Last 6 Months · This Year · All Time.
+
+**Five charts, displayed in this order:**
+
+**1. Spending by Category — Donut chart**
+Aggregates total debit amounts on `expense`-type transaction lines over the selected period. Each slice = one category. Legend lists category name and percentage. Hovering/tapping a slice shows the total amount. Excludes zero-spend categories.
+
+**2. Monthly Expenses vs Income — Grouped bar chart**
+One group of two bars per calendar month in the selected period. Bar 1 = sum of all income lines for that month. Bar 2 = sum of all expense lines. X-axis: month labels (e.g. "Jan", "Feb"). Y-axis: amount. Tooltip shows exact values.
+
+**3. Net Worth over time — Line chart**
+One data point per calendar month. Value = total assets net balance minus total liabilities net balance at the end of that month, in the default currency. X-axis: months. Y-axis: amount. A horizontal reference line at zero.
+
+**4. Cash Flow over time — Line chart**
+One data point per calendar month. Value = sum of all income transaction lines minus sum of all expense transaction lines for that month. Positive = surplus, negative = deficit. Same axis treatment as Net Worth chart. Reference line at zero.
+
+**5. Balance per Account — Horizontal bar chart**
+One bar per selected account. User selects which accounts to display via a multi-select above the chart. Default selection: all root-level asset accounts. Bar length = net running balance per §5.3 formula, in the default currency. Accounts with zero balance are included if selected.
+
+**Multi-currency note:** All Analytics charts aggregate amounts in the default currency only. Transactions in other currencies are excluded from chart computations. A subtle note below each chart reads: *"Amounts shown in [default currency code] only."*
+
+**Recharts components used:** `PieChart`, `BarChart`, `LineChart`, `ResponsiveContainer`, `Tooltip`, `Legend`, `XAxis`, `YAxis`, `CartesianGrid`. All styled using the app's design tokens (colours from `tailwind.config.js`, `font-numeric` for axis tick values).
 
 ### 7.7 Page pre-react-hydrated
 
-Place a CSS spinner inside <div id="root"> in index.html, visible immediately on page load before React hydrates. React's first render replaces it. Style with the app's primary colour.
+A CSS spinner inside <div id="root"> in `index.html` is visible immediately on page load before React hydrates. Styled with the app's accent colour. React's first render replaces it.
+
+---
+
+### 7.8 Toast System
+
+**Infrastructure:**
+
+- **`toastStore.js`** (Zustand) — State: `toasts: []` where each toast is `{ id, message, type, duration, action }`. Actions: `addToast(toast)`, `removeToast(id)`, `clearAll()`.
+- **Types:** `success`, `error`, `info`.
+- **`Toast.jsx`** — Single toast: icon (check / × / info), message, optional action link, manual `×` dismiss button. Auto-dismisses after `duration` ms except when `type === 'error'` (manual close only). Entry animation: slide up from bottom. Exit: fade out.
+- **`ToastContainer.jsx`** — Renders active queue. Position on `md+`: fixed bottom-right. Position on `< md`: fixed with `bottom` offset equal to BottomNav height plus padding (`bottom: calc(4rem + env(safe-area-inset-bottom) + 0.5rem)`). Max 3 toasts visible; when a 4th is added, the oldest is removed immediately. Mounted in `App.jsx` at root level, outside Router's page components.
+
+**Clearing behaviour:**
+- Browser refresh: automatic (Zustand is in-memory, not persisted).
+- Sign-out: `toastStore.clearAll()` called in the sign-out handler in `googleAuth.js`.
+- Page navigation: `useEffect` in `ToastContainer` listens to React Router's `useLocation()` — on every route change, calls `toastStore.clearAll()`.
+
+**Event wiring:**
+
+| Event | Type | Duration | Message | Action |
+|---|---|---|---|---|
+| Transaction saved | success | 5s | "Transaction saved." | Undo |
+| Transaction updated | success | 3s | "Transaction updated." | — |
+| Transaction deleted | success | 3s | "Transaction deleted." | — |
+| Category created | success | 3s | "Category created." | — |
+| Category updated | success | 3s | "Category saved." | — |
+| Category delete blocked | error | manual | "Cannot delete: [reason]." | — |
+| Signed in | success | 3s | "Signed in as [email]." | — |
+| Signed out | info | 3s | "Signed out." | — |
+| Token re-auth failed | error | manual | "Session expired. Please sign in again." | Sign In |
+| Sync started | info | persistent | "Syncing…" | — |
+| Sync complete | success | 3s | "Sync complete." | — |
+| Sync failed | error | 5s | "Sync failed. Try again." | — |
+| Export downloaded | success | 3s | "Export downloaded." | — |
+
+The persistent sync-started toast is replaced (not stacked) by the sync complete or sync failed toast.
+
+The toast duration for an event is set by global constants dependending on the event type. TOAST_DURATION_SUCCESS for "success", TOAST_DURATION_ERROR for "error" and TOAST_DURATION_INFO for "info".
 
 ---
 
@@ -519,9 +680,13 @@ https://www.googleapis.com/auth/drive.appdata
 
 If the user dismisses the Google OAuth prompt or denies permissions, do not proceed with initialisation. Show an error state on the sign-in screen: *"Google permissions are required to use OpenAccounts."* with a *"Try again"* button that re-initiates the OAuth flow.
 
+Implemented in `SignInScreen.jsx`. Two error states are handled:
+- `authStore.authError` set (permissions denied or OAuth dismissed): shows "Google permissions are required to use OpenAccounts." + "Try again" button
+- `authStore.error` set (generic failure): shows the error string
+
 ### 8.3 Post sign-in initialisation
 
-Immediately after a successful sign-in, before rendering the app:
+Implemented in `AppInit.jsx`, rendered immediately after sign-in, before the main app shell.  The Drive check uses an 8-second `AbortController` timeout (`APP_INIT_TIMEOUT_MS`). A loading screen is shown during this check. On timeout or network error, shows an error message *"Couldn't reach Google Drive. Please check your connection and try again."* with a "Try Again" button — does not fall back to local data silently. Drive is the source of truth.
 
 ```
 Check Drive for openaccounts.json
@@ -529,7 +694,8 @@ Check Drive for openaccounts.json
   → File absent:  seed base CoA (§11) → push to Drive → render app
 ```
 
-A loading screen is shown during this check. If the Drive call times out after 8 seconds, show an error state: *"Couldn't reach Google Drive. Please check your connection and try again."* Do not fall back to local data silently — Drive is the source of truth.
+Drive restore uses `populateFromSnapshot(db, data)` from `db/snapshot.js` — this clears all IndexedDB stores and bulk-inserts from the Drive file.
+Post-seed push uses `buildSnapshot()` from `db/snapshot.js` to serialise the seeded state before pushing to Drive.
 
 ### 8.4 Token storage
 
@@ -537,6 +703,7 @@ A loading screen is shown during this check. If the Drive call times out after 8
 |---|---|
 | `oa_access_token` | GIS access token string |
 | `oa_token_expiry` | ISO timestamp of token expiry |
+| `oa_user_info` | JSON string - Full user profile from `fetchUserInfo()`: `{ sub, name, givenName, familyName, picture, email, emailVerified }`. Persists the profile across page refreshes without an extra API call |
 
 No refresh token — GIS token client does not issue refresh tokens.
 
@@ -545,6 +712,46 @@ No refresh token — GIS token client does not issue refresh tokens.
 **Strict check** — Run on app load and before any protected Drive action. Verifies the user's Google session is still valid. If the token is expired and silent re-auth fails, return the user to the sign-in screen.
 
 **Early refresh check** — Run when `oa_token_expiry` is within 5 minutes of the current time. Calls `tokenClient.requestAccessToken({ prompt: '' })` silently to obtain a fresh token before any active task breaks.
+
+### 8.6 Managing auth errors and Drive access loss
+
+**Background:** A 403 from the Drive API means the app's OAuth token lacks the `drive.appdata` scope. This happens in two distinct scenarios.
+
+**Case 1 — Scope not granted on first sign-in**
+
+*When:* During `AppInit.jsx` initial Drive check, immediately after the user signs in for the first time.
+
+*Cause:* The user dismissed or unchecked the Drive permission in the Google OAuth consent screen.
+
+*Detection:* Drive API returns 403 during the first file check.
+
+*Flow:*
+1. `AppInit` catches the 403 and sets `authStore.driveAccessDenied = true`
+2. A full-screen message replaces the loading state:
+   *"OpenAccounts needs access to your Google Drive to save your data. It can only access files it creates - nothing else in your Drive is visible to this app."*
+   Button: **"Grant Access"**
+3. User taps "Grant Access" → `tokenClient.requestAccessToken()` is called with `prompt: 'consent'` to force the consent screen to reappear
+4. On success: clear `driveAccessDenied`, retry the Drive file check, continue normal init
+5. On repeated denial: show the message again
+
+**Case 2 — Scope revoked or reset during active use**
+
+*When:* During `syncEngine.sync()` — either the upload (push) or download (pull) step.
+
+*Cause:* The user revoked Drive access via Google account settings, or the token scope was reset externally.
+
+*Detection:* Drive API returns 403 during an upload or download call inside `syncEngine`.
+
+*Flow:*
+1. `syncEngine` catches the 403 and aborts the sync operation
+2. `pendingChangeCount` is **not reset** — the user's unsynced local changes remain intact in IndexedDB and the count is preserved
+3. `syncStore.syncStatus` is set to `'error'`
+4. A persistent (manual-dismiss) toast is shown:
+   *"Drive access was lost. Your local data is safe — re-authorise to resume syncing."*
+   Action link: **"Re-authorise"**
+5. User taps "Re-authorise" → `tokenClient.requestAccessToken()` is called with `prompt: 'consent'`
+6. On success: dismiss the toast, automatically call `syncStore.syncNow()` to retry the sync with the pending changes
+7. The user's changes that were pending are pushed as part of the retry — nothing is lost
 
 ---
 
@@ -568,6 +775,10 @@ No refresh token — GIS token client does not issue refresh tokens.
 }
 ```
 
+`buildSnapshot(data)` from `db/snapshot.js` is the canonical serialiser for this format. It is called by `syncEngine.js` (Drive push), `AppInit.jsx` (post-seed push), and `export.js` (JSON download).
+
+`deleteFile(fileId)` — `DELETE /drive/v3/files/{fileId}`. Accepts 204 (deleted) and 404 (already gone) as success. Throws on other errors. Called by `ResetAppFlow` during full app reset.
+
 ### 9.2 Sync engine
 
 **Trigger:** Manual only — user presses "Sync" on Profile page.
@@ -590,7 +801,7 @@ No refresh token — GIS token client does not issue refresh tokens.
 
 ### 9.3 Auto sync
 
-Every write (transaction created/updated/deleted, category created/updated/deleted, currency added/removed) schedules an automatic sync with a 30-second debounce. Each new write resets the timer.
+Every write (transaction created/updated/deleted, category created/updated/deleted, currency added/removed) schedules an automatic sync with a 30-second debounce. Each new write resets the timer. The connection between DB writes and `syncStore` is mediated by `db/sync.js` — a pub-sub notification hub. This decoupling prevents a circular dependency between the DB layer and `syncStore`. `syncStore` registers itself via `registerOnChange()` on startup. `categories.js`, `transactions.js`, and `currencies.js` call `notifyChange()` after every successful write (unless `suppressSync: true`). `transactionLines.js` and `settings.js` do not call it — see §4.3 and §4.5 for reasons.
 
 `syncStore` gains two new fields:
 - `pendingChangeCount: number` — tracks outstanding unsynced writes. Default `0`.
@@ -668,6 +879,11 @@ This migration runs once and never again.
 | 14 | Toast notification system — `toastStore`, `Toast`, `ToastContainer`; all event wiring; Undo backend logic (action link disabled — see Known Issue #13); clear on navigation and sign-out | ✅ Complete |
 | 15 | Mobile & UX bug fixes — Ledger and Categories card views on mobile; transaction form row widths (CategorySelect `flex-1`, fixed currency + amount widths) and two-line mobile layout; date input full width matching other inputs; BottomNav smooth scroll hide/restore with iOS safe-area; mobile sticky top bar layout shell (consumed by Phase 16 for sync wiring); Profile currencies button press animation and popup elevation; page headers removed (redundant with MobileTopBar); Google permissions denied error state and retry; `index.html` first-load spinner; base CoA descriptions for AR and AP | ✅ Complete |
 | 16 | Auto sync — `syncStore` additions (`pendingChangeCount`, `pendingSyncTimer`, `schedulePendingSync`, `decrementAndMaybeCancel`, `syncNow`); wire all DB writes (`transactions`, `categories`, `currencies`) to increment + `schedulePendingSync` with `suppressSync` option for undo; wire undo to `decrementAndMaybeCancel`; manual sync buttons (desktop navbar + mobile top bar) call `syncNow()`; Profile sync button switched to `syncNow()`; timer identity check guards writes-during-sync race; `visibilitychange` hook syncs pending writes on tab hide | ✅ Complete |
+| 17 | Bug fix batch — issues #2, #3, #4, #5 (drop avatar sync ring), #6, #7, #8, #10 | ⏳ Pending |
+| 18 | Auth: Drive 403 handling — two-case re-authorisation flow (§8.6) | ⏳ Pending |
+| 19 | User-defined currencies — custom code + name form, schema v3 migration to drop symbol | ⏳ Pending |
+| 20 | Categories search — inline search next to New Category button, real-time filtering, hide empty groups | ⏳ Pending |
+| 21 | Analytics page — Recharts, 5 charts, global time range filter, multi-currency exclusion note | ⏳ Pending |
 
 ---
 
@@ -678,294 +894,169 @@ Bugs and regressions identified during Phase 15 testing. These are tracked for r
 | # | Issue | Priority | Notes |
 |---|-------|----------|-------|
 | 1 | Drive API 403 — insufficient auth scopes | High | "Try Again" on 403 leads to dead end. Need to detect 403, clear token, and re-initiate OAuth with full scopes |
-| 2 | Categories console warning — missing `key` prop | Low | `Fragment <>` usage in `Categories.jsx` list rendering without keys |
-| 3 | Toast appears above BottomNav | Medium | `ToastContainer` fixed positioning conflicts with `BottomNav` on mobile |
-| 4 | Profile reset modal overlay not dimming | Low | Nested modals during reset flow may not apply `bg-overlay` correctly |
-| 5 | Avatar sync ring animation visual polish | Low | Spinning ring on `AvatarWithSync` during sync — consider less prominent treatment |
-| 6 | Profile image broken on re-navigation | Medium | Image fails to load after navigating away and back; investigate `referrerpolicy` or cache behaviour |
-| 7 | "Add Row" button retains `:focus` on mobile | Low | After tapping "Add Row", the button stays visually focused; use `:focus-visible` |
-| 8 | Delete button alignment in TransactionForm's rows on mobile | Low | Push delete button to far-right of line 2 with a flex spacer |
-| 9 | Undo (transaction save) disabled | Low | Button hidden in Toast. Backend logic (`lastSavedTransaction`, 5s auto-clear) kept intact. Re-enable once auto-sync compatibility is validated: (1) undo must not schedule a sync, (2) undo must correctly decrement `pendingChangeCount`, (3) undo must restore form state without data races |
-| 10 | Leaf income/expense net balance dash | Low | CategoryRow and CategoryCard always show the computed net balance. SPEC §7.4 requires a dash (`—`) for leaf expense/income categories where lifetime totals are not meaningful |
+| 2 | Categories console warning — missing `key` prop | Low | `Fragment <>` usage in `Categories.jsx` list rendering without keys. Resolved in Phase 17. |
+| 3 | Toast appears above BottomNav | Medium | Fix: offset ToastContainer bottom by BottomNav height + safe-area on mobile. Resolved in Phase 17. |
+| 4 | Profile reset modal overlay not dimming | Low | Nested modals during reset flow may not apply `bg-overlay` correctly. Resolved in Phase 17. |
+| 5 | Avatar sync ring animation visual polish | Low | Resolution: drop the avatar sync ring entirely. Sync icon button adjacent to avatar already shows spinner. Resolved in Phase 17. |
+| 6 | Profile image broken on re-navigation | Medium | Image fails to load after navigating away and back; investigate `referrerpolicy` or cache behaviour. Resolved in Phase 17. |
+| 7 | "Add Row" button retains `:focus` on mobile | Low | After tapping "Add Row", the button stays visually focused; use `:focus-visible`. Resolved in Phase 17. |
+| 8 | Delete button alignment in TransactionForm's rows on mobile | Low | Push delete button to far-right of line 2 with a flex spacer. Resolved in Phase 17. |
+| 9 | Undo (transaction save) disabled | Low | Button hidden in Toast. Backend logic (`lastSavedTransaction`, 5s auto-clear) kept intact. Re-enable only after auto-sync compatibility is fully validated: (1) undo must not schedule a sync, (2) undo must correctly decrement `pendingChangeCount`, (3) undo must restore form state without data races |
+| 10 | Leaf income/expense net balance dash | Low | CategoryRow and CategoryCard always show the computed net balance. SPEC §7.4 requires a dash (`—`) for leaf expense/income categories where lifetime totals are not meaningful. Resolved in Phase 17. |
 
 ---
 
 ## 14. Next Phases (planned)
 
-### Phase 11 — Monospaced numbers
+**Set the app's version to the `<current-major-version>.<current-phase>.<current-patch-version>`**
 
-**Scope:** `tailwind.config.js`, and a targeted class-addition pass across `src/components/` and `src/pages/`.
+### Phase 17 — Bug fix batch (remaining issues from §13)
 
-**Work:**
-Register `font-numeric` in `tailwind.config.js` under `theme.extend.fontFamily`:
-```js
-numeric: ['Geist Mono', 'Roboto Mono', 'monospace'],
-```
-Then apply the `font-numeric` Tailwind class to every instance of: transaction amounts (form inputs and ledger display), balance totals, currency symbols when adjacent to amounts, opening balance fields, net balance on the Categories page, all date strings (ledger column, recent transactions list, metrics), and the per-currency balance indicator on the transaction form.
-
-**Do not touch:** Any logic, stores, DB, or layout structure.
-
-**Acceptance criteria:** All amounts, balances, and dates render in Geist Mono / Roboto Mono. Non-numeric UI text (labels, descriptions, nav items) is unaffected.
-
----
-
-### Phase 12 — CategorySelect component
-
-**Scope:** `src/components/ui/CategorySelect.jsx` (new), `src/components/forms/TransactionForm.jsx`.
+**Scope:** `src/components/ui/ToastContainer.jsx`, `src/components/layout/AvatarWithSync.jsx`, `src/components/transactions/TransactionForm.jsx`, `src/components/categories/CategoryRow.jsx`, `src/components/categories/CategoryCard.jsx`
 
 **Work:**
 
-Build `CategorySelect` as a custom combobox component following the shadcn Command/Combobox pattern, using `cmdk` as the underlying primitive. It replaces every category `<select>` in the transaction form.
+*Issue #3 — Toast appears above BottomNav on mobile:*
+In `ToastContainer.jsx`, change the mobile (`< md`) position: replace `fixed bottom-4 right-4 max-md:left-4` with a bottom offset that accounts for the BottomNav height: `fixed bottom-0 left-0 right-0 max-md:bottom-[calc(4rem+env(safe-area-inset-bottom)+0.5rem)]`. This ensures toasts never overlap the BottomNav.
 
-*Behaviour:*
-- Trigger button shows the selected category name, or a placeholder when empty. No indentation, no breadcrumb — just the name, regardless of whether it's a root or child category.
-- Clicking the trigger opens a popover with a search input auto-focused.
-- Typing filters all options by substring match (case-insensitive) across both parent and child category names.
-- The top matching result is automatically in a focused/highlighted state (visually equivalent to hover) so pressing `Enter` immediately selects it.
-- Options are grouped under their account type label (Assets, Liabilities, Income, Expenses, Equity). Group labels are non-selectable headers.
-- Within each group, root categories are listed first. Their children appear immediately below them, indented with a left padding increment and slightly muted text weight.
-- `is_system: true` categories (Opening Balance Equity) are never shown.
-- No account type colour tokens are applied at this stage — that is a separate future session.
-- If search produces no results, show: *"No categories found."*
+*Issue #5 — Avatar sync ring is redundant:*
+In `AvatarWithSync.jsx`, remove the `<div>` block that renders the spinning ring when `status === 'syncing'`. The sync icon button adjacent to the avatar already shows a spinner, making the ring redundant and visually noisy.
 
-*Keyboard:*
-- `↑` / `↓` — move focus through options (wraps within results)
-- `Enter` — selects the focused option, closes the popover
-- `Escape` — closes the popover without selecting, returns focus to the trigger
+*Issue #7 — "Add Row" button retains `:focus` on mobile:*
+In `TransactionForm.jsx`, replace `focus:` with `focus-visible:` on the "Add Row" button's Tailwind classes so the focus ring does not persist after a tap interaction on mobile.
 
-*Wiring:*
-Replace all existing category dropdowns in `TransactionForm` (From rows and To rows) with `CategorySelect`. Pass the full categories list from `categoryStore`. The component receives `value`, `onChange`, and `placeholder` props.
+*Issue #8 — Delete button alignment in TransactionForm rows on mobile:*
+In `TransactionForm.jsx`, on mobile (`flex-col` layout), add an `ml-auto` flex spacer before the delete button on line 2 to push it to the far-right.
 
-**Do not touch:** Ledger edit modal (separate instance, addressed in a later pass), Categories page dropdowns, any store or DB logic.
+*Issue #10 — Leaf income/expense net balance dash:*
+In `CategoryRow.jsx` and `CategoryCard.jsx`, update the `balanceDisplay` logic to show `—` (dash) when the category has no children (leaf) and its `type` is `income` or `expense`. Use `useCategoryTree` to determine leaf status.
 
-**Acceptance criteria:** Typing in the search field filters options correctly. Arrow key navigation works. The top result is auto-focused on open and on each keystroke. Selecting a child category shows only its name in the trigger. `Escape` closes without selecting. System categories never appear.
-
----
-
-### Phase 13 — Transaction form enhancements
-
-**Scope:** `src/components/forms/TransactionForm.jsx`, `src/utils/accounting.js` (balance indicator logic only).
-
-**Work:**
-
-*Keyboard shortcuts:*
-- `Ctrl+S` — submits the form if the per-currency invariant is met; does nothing if the form is invalid. Attach to `keydown` on the form container with `e.preventDefault()` to suppress browser save dialog.
-- `Tab` — ensure logical focus order: Date → Description → From row 1 (Category, Currency, Amount) → From row 2… → To row 1… → Notes → Save button.
-- `Enter` — when pressed while focus is on an amount input (the last field in a row), append a new row to the same section (From or To) and move focus to the Category field of the new row.
-- `Escape` — if the `CategorySelect` popover is open, close it and return focus to the trigger. If no popover is open and a modal is open, close the modal.
-
-*Zero-balance success indicator:*
-
-Replace the current per-currency difference display with an equality statement format. For each currency present in the form:
-
-- **Unbalanced state:** `Credits AED 100.00 ≠ Debits AED 150.00` — displayed in the existing unbalanced colour (red/amber).
-- **Balanced state:** `Credits AED 100.00 = Debits AED 100.00` — displayed in green. On transition from unbalanced to balanced, play a brief success animation: the `≠` flips to `=` with a fade-cross transition, and the line pulses green once.
-
-One line per currency. Use `font-numeric` for all amounts in this indicator. If the form has no amounts entered yet, the indicator is hidden entirely.
-
-**Do not touch:** CategorySelect internals (Phase 12), any store, DB, or sync logic.
-
-**Acceptance criteria:** `Ctrl+S` saves a valid form and does nothing on an invalid one. `Enter` on an amount field adds a row and moves focus correctly. The balance indicator shows the equality format with correct amounts per currency. The animation fires exactly once on each transition from unbalanced to balanced.
-
----
-
-### Phase 14 — Toast notification system
-
-**Scope:** `src/store/toastStore.js` (new), `src/components/ui/Toast.jsx` (new), `src/components/ui/ToastContainer.jsx` (new), `src/App.jsx`, plus targeted wiring in existing stores and components.
-
-**Work:**
-
-*Infrastructure:*
-
-`toastStore.js` — Zustand store. State: `toasts: []` where each toast is `{ id, message, type, duration, action }`. Actions: `addToast(toast)`, `removeToast(id)`, `clearAll()`. Types: `success`, `error`, `info`.
-
-`Toast.jsx` — single toast. Shows icon (check / × / info), message, optional action link, and a manual `×` dismiss button. Auto-dismisses after `duration` ms except when `type === 'error'` (manual close only). Entry animation: slide up from bottom. Exit: fade out.
-
-`ToastContainer.jsx` — renders the active queue. Position: fixed, bottom-right on `md+`, bottom-centre on mobile. Max 3 toasts visible; when a 4th is added, the oldest is removed immediately. Mount inside `App.jsx` at the root level, outside the Router's page components.
-
-*Clearing behaviour:*
-- Browser refresh: automatic (Zustand is in-memory, not persisted).
-- Sign-out: call `toastStore.clearAll()` in the sign-out handler in `googleAuth.js`.
-- Page navigation: add a `useEffect` in `ToastContainer` that listens to React Router's `useLocation()` — on every route change, call `toastStore.clearAll()`.
-
-*Undo (transaction save only):*
-
-After a transaction is saved, `transactionStore` stores the full payload of the just-saved transaction + lines as `lastSavedTransaction`. The success toast message is *"Transaction saved"* with an *"Undo"* action link. Clicking Undo: hard-deletes the saved transaction and its lines, restores the form to its pre-save state, dismisses the toast. After 5 seconds: toast auto-dismisses, `lastSavedTransaction` is cleared. No undo is offered for edits or deletes — those are final.
-
-The undo delete operation must not call `schedulePendingSync()` and must not increment `pendingChangeCount`. It must call `syncStore.decrementAndMaybeCancel()` (or equivalent action) instead.
-
-*Event wiring:*
-
-| Event | Type | Duration | Message | Action |
-|---|---|---|---|---|
-| Transaction saved | success | 5s | "Transaction saved." | Undo |
-| Transaction updated | success | 3s | "Transaction updated." | — |
-| Transaction deleted | success | 3s | "Transaction deleted." | — |
-| Category created | success | 3s | "Category created." | — |
-| Category updated | success | 3s | "Category saved." | — |
-| Category delete blocked | error | manual | "Cannot delete: [reason]." | — |
-| Signed in | success | 3s | "Signed in as [email]." | — |
-| Signed out | info | 3s | "Signed out." | — |
-| Token re-auth failed | error | manual | "Session expired. Please sign in again." | Sign In |
-| Sync started | info | persistent | "Syncing…" | — |
-| Sync complete | success | 3s | "Sync complete." | — |
-| Sync failed | error | 5s | "Sync failed. Try again." | — |
-| Export downloaded | success | 3s | "Export downloaded." | — |
-
-The persistent sync-started toast is replaced (not stacked) by the sync complete or sync failed toast.
-
-**Do not touch:** Any DB schema, routing config, CategorySelect, or balance indicator logic.
-
-**Acceptance criteria:** Every listed event fires the correct toast. Error toasts require manual close. Three-toast cap enforced. Undo correctly reverses the last save and restores form state. All toasts clear on route change and on sign-out. Sync toasts replace rather than stack.
-
-### Phase 15 — Mobile & UX Bug Fixes
-
-**Scope:** `index.html`, `src/constants/baseCoa.js`, `src/components/layout/AppShell.jsx`, `src/components/layout/MobileTopBar.jsx` (new), `src/components/layout/BottomNav.jsx`, `src/components/forms/TransactionForm.jsx`, `src/pages/Home.jsx`, `src/pages/Ledger.jsx`, `src/components/tables/LedgerTable.jsx`, `src/pages/Categories.jsx`, `src/components/tables/CategoryTable.jsx`, `src/pages/Profile.jsx`, sign-in screen component.
-
-**Work:**
-
-*First-load blank screen:*
-Add a CSS spinner inside `<div id="root">` in `index.html`. It must be visible immediately — no JavaScript required to render it. React's first render replaces the `root` contents, removing the spinner automatically.
-
-*Base CoA descriptions:*
-In `baseCoa.js`, add `description` fields to two entries:
-- Accounts Receivable: `"People who owe you money. Create a sub-category for each person."`
-- Accounts Payable: `"People you owe money to. Create a sub-category for each person."`
-
-*BottomNav — scroll behaviour:*
-Track scroll direction with a `useEffect` event listener on `window`. When the user scrolls down past a 60px threshold from the top, apply a `translate-y-full` transform to hide the BottomNav. When the user scrolls up, remove it. CSS transition on the transform: `duration-300 ease-in-out`. Apply `padding-bottom: env(safe-area-inset-bottom)` to the BottomNav container to clear the iOS system home bar. The 60px threshold prevents the nav from hiding on minor incidental scroll at the top of the page.
-
-*Mobile top bar — layout shell (sync wiring deferred to Phase 16):*
-Create `MobileTopBar.jsx`. Renders only on `< md`. Fixed at the top of the viewport, full width, standard height (`h-14`). Left: current page title derived from `useLocation()` matched against the route map (`/` → "Home", `/ledger` → "Ledger", etc.). Right: a sync icon button (circular arrows). In Phase 15 the sync icon is rendered but not yet wired — it is visually present as a placeholder. Mount `MobileTopBar` in `AppShell.jsx` above the page content on mobile. Add `pt-14` top padding to the page content area on `< md` to prevent content from sitting behind the bar.
-
-*Transaction form — row widths:*
-In `TransactionForm.jsx`, each From/To row container uses `flex items-center gap-2`. Apply:
-- `CategorySelect`: `flex-1 min-w-0` so it takes all remaining space
-- Currency dropdown: fixed `w-24`
-- Amount input: fixed `w-28`
-- Delete row icon: fixed `w-8` (or `shrink-0`)
-
-The `flex-1 min-w-0` on CategorySelect also ensures its dropdown popover inherits an appropriate minimum width rather than collapsing to the trigger's narrow width. Set the popover's `min-w` explicitly to `min-w-[200px]` in `CategorySelect.jsx`.
-
-*Transaction form — date input width:*
-Remove any fixed narrow width from the date input. Apply `w-full` so it matches the full-width behaviour of the Description and Notes inputs.
-
-*Transaction form — two-line mobile layout:*
-On mobile (`< md`), each From/To row splits into two lines: CategorySelect (full width) on line 1, Currency + Amount + Delete button inline on line 2. Desktop (`md+`) keeps a single inline row.
-
-*Ledger — mobile card view:*
-On `< md`, replace the table with a card list in `LedgerTable.jsx`. Each transaction renders as a card with:
-- First row: Date (`font-numeric`, muted) and Description (semibold), space-between
-- Second row if Notes present: Notes text, truncated to one line, muted and smaller
-- From section label + stacked entries: each entry on its own line — Category (truncated) on the left, Amount + Currency right-aligned (`font-numeric` for amount and currency)
-- To section label + stacked entries: same format
-- Top-right corner of card: Edit icon and Delete icon
-- Cards separated by a subtle divider or gap
-
-The filter bar remains collapsible above the card list. Pagination controls remain below. The desktop table layout is unchanged.
-
-*Categories — mobile card view:*
-On `< md`, replace the table with a card list in `CategoryTable.jsx`. Each category renders as a card with:
-- Name: bold for root categories; for children, a left indent and slightly muted weight
-- Opening Balance: shown inline if non-zero, labelled "Opening:" prefix, `font-numeric`
-- Net Balance: shown per currency, labelled "Balance:" prefix, `font-numeric`; dash if not meaningful
-- Bottom-right: Edit and Delete icon buttons
-- Cards separated by a subtle divider
-
-Account type group headers (Assets, Liabilities, etc.) remain as full-width section labels between groups. The desktop table layout is unchanged.
-
-*Profile — currencies UI:*
-In `Profile.jsx`:
-- "Add Currency" button: add `active:scale-95 transition-transform` classes for a press-down feedback animation.
-- Currency search popup: ensure it has a solid background (`bg-white dark:bg-gray-900` or the app's established surface token), a visible border (`border border-gray-200 dark:border-gray-700`), and a `shadow-pop` drop shadow (consistent with other dropdowns). The popup must not visually merge with the page behind it.
-
-*Google permissions denied:*
-In `googleAuth.js`, inspect the GIS token client callback response. If the response contains `error: 'access_denied'` or if the user closes the OAuth dialog without granting permissions, do not proceed with initialisation. Set an `authError` field in `authStore`. On the sign-in screen, when `authError` is set, display: *"Google permissions are required to use OpenAccounts."* and a *"Try again"* button that clears `authError` and re-initiates `tokenClient.requestAccessToken()`. The app must not reach a blank or partially initialised state.
-
-**Do not touch:** `syncStore`, `syncEngine`, any DB store logic, Navbar (desktop), Phase 11–14 components, Analytics page.
+**Do not touch:** Any DB schema, sync logic, auth logic, CategorySelect internals, toast infrastructure beyond the position fix.
 
 **Acceptance criteria:**
-- A CSS spinner is visible on first page load before React renders
-- Accounts Receivable and Accounts Payable show their descriptions in the Category edit form
-- BottomNav hides smoothly on scroll down and restores on scroll up with a visible transition; does not flicker on minor scroll; clears the iOS home bar
-- Mobile top bar is visible on mobile, shows correct page title per route, and contains a sync icon (non-functional in this phase)
-- CategorySelect takes the majority of row width on mobile; its dropdown is at least 200px wide
-- Date input is full-width, consistent with Description and Notes
-- Ledger shows card layout on mobile; desktop table is unchanged
-- Categories shows card layout on mobile; desktop table is unchanged
-- "Add Currency" button visually depresses on tap
-- Currency popup is clearly elevated from the background
-- Denying Google OAuth shows the error message and Try again button; the app does not proceed
+- Toasts on mobile clear the BottomNav (no overlap).
+- Avatar has no visible sync ring overlay.
+- "Add Row" button does not retain focus highlight on mobile after tap.
+- Delete button is right-aligned on line 2 of mobile rows.
+- Leaf income and expense categories show `—` for net balance; parent categories still show computed balances.
 
 ---
 
-### Phase 16 — Auto Sync + Mobile Top Bar Wiring
+### Phase 18 — Auth: Drive 403 handling
 
-**Scope:** `src/store/syncStore.js`, `src/db/transactions.js`, `src/db/categories.js`, `src/db/currencies.js`, `src/store/transactionStore.js`, `src/components/layout/MobileTopBar.jsx`, `src/components/layout/Navbar.jsx`, `src/pages/Profile.jsx`.
+Implement the two-case Drive 403 re-authorisation flow specified in §8.6.
+
+**Scope:** `src/components/layout/AppInit.jsx`, `src/sync/googleDrive.js`, `src/sync/googleAuth.js`, `src/store/authStore.js`, `src/sync/syncEngine.js`, `src/store/syncStore.js`, toast wiring.
 
 **Work:**
 
-*syncStore additions:*
-Add the following to `syncStore.js`:
+*Case 1 — Scope not granted on first sign-in (§8.6 Case 1):*
+1. Add `driveAccessDenied: boolean` field to `authStore`.
+2. In `AppInit.jsx`, detect 403 responses from the initial Drive file check. On 403, set `authStore.driveAccessDenied = true` and render a full-screen message: *"OpenAccounts needs access to your Google Drive to save your data. It can only access files it creates — nothing else in your Drive is visible to this app."* with a **"Grant Access"** button.
+3. "Grant Access" calls `tokenClient.requestAccessToken({ prompt: 'consent' })`. On success: clear `driveAccessDenied`, retry the Drive file check, continue normal init. On repeated denial: show the message again.
 
-```
-pendingChangeCount: number         // default 0
-pendingSyncTimer: timeout | null   // default null
+*Case 2 — Scope revoked during active use (§8.6 Case 2):*
+4. In `googleDrive.js`, propagate 403 status codes distinctly (e.g., throw a typed error or attach a flag).
+5. In `syncEngine.js`, catch 403 during pull or push. On 403: abort the sync, do not reset `pendingChangeCount`, set `syncStore.syncStatus = 'error'`.
+6. Show a persistent (manual-dismiss) error toast: *"Drive access was lost. Your local data is safe — re-authorise to resume syncing."* with an action link **"Re-authorise"**.
+7. "Re-authorise" calls `tokenClient.requestAccessToken({ prompt: 'consent' })`. On success: dismiss the toast, call `syncStore.syncNow()` automatically to retry with pending changes intact.
 
-schedulePendingSync()
-  — clears pendingSyncTimer if set
-  — sets a new 30-second timeout that calls syncEngine.sync()
-  — stores the timeout reference in pendingSyncTimer
-
-decrementAndMaybeCancel()
-  — decrements pendingChangeCount by 1, floor at 0
-  — if pendingChangeCount reaches 0: clears pendingSyncTimer, sets it to null
-  — if pendingChangeCount > 0: calls schedulePendingSync() to reset the 30-second window
-
-syncNow()
-  — clears pendingSyncTimer, sets it to null
-  — sets pendingChangeCount to 0
-  — calls syncEngine.sync() immediately
-```
-
-On successful auto or manual sync completion: set `pendingChangeCount = 0`, clear `pendingSyncTimer`.
-On sync failure: do not reset `pendingChangeCount`, do not reschedule. Existing error toast handles user feedback.
-
-*Wire all DB writes:*
-After every successful write in `db/transactions.js`, `db/categories.js`, and `db/currencies.js`, call `syncStore.getState().schedulePendingSync()` and increment `pendingChangeCount` by 1 before calling `schedulePendingSync`. Specifically:
-- `createTransaction`, `updateTransaction`, `deleteTransaction`
-- `createCategory`, `updateCategory`, `deleteCategory`
-- `addCurrency`, `removeCurrency`, `setDefaultCurrency`
-
-*Wire undo to decrementAndMaybeCancel:*
-In `transactionStore.js`, the undo operation hard-deletes the saved transaction and its lines directly via the DB layer — bypassing the normal `deleteTransaction` write path so it does not call `schedulePendingSync`. After the undo delete completes, call `syncStore.getState().decrementAndMaybeCancel()`.
-
-*Manual sync buttons:*
-- **Desktop navbar** (`Navbar.jsx`): add a sync icon button (circular arrows) to the right section, left of the avatar. `onClick` calls `syncStore.getState().syncNow()`.
-- **Mobile top bar** (`MobileTopBar.jsx`): wire the existing sync icon button placeholder to `syncStore.getState().syncNow()`.
-- **Profile page** (`Profile.jsx`): the existing "Sync with Google Drive" button calls `syncStore.getState().syncNow()` instead of calling `syncEngine.sync()` directly.
-
-*Sync state display:*
-Both the desktop navbar avatar (existing) and the mobile top bar sync icon (new) must reflect live sync state from `syncStore`:
-- `syncStatus === 'syncing'`: spinner animation on the icon
-- `syncStatus === 'success'`: tick/check icon, revert to default after 3 seconds
-- `syncStatus === 'error'`: cross icon, persists until next sync attempt
-- `syncStatus === 'idle'`: default circular arrows icon
-
-`MobileTopBar.jsx` reads `syncStore.syncStatus` and applies the appropriate icon and animation class, consistent with the existing avatar behaviour.
-
-**Do not touch:** Any IndexedDB schema, `syncEngine.js` internals (only its `sync()` entry point is called), Phase 11–14 components, Categories or Ledger layout, any page content outside the navbar and top bar.
+**Do not touch:** Any DB schema, category/transaction CRUD, form UI, analytics, or any page content outside the auth/sync flows.
 
 **Acceptance criteria:**
-- Saving a transaction triggers an auto sync after 30 seconds of no further writes
-- Saving a second transaction within 30 seconds of the first resets the timer; only one sync fires
-- Pressing Undo after a save cancels the pending sync if no other writes exist; if other writes exist, the timer continues
-- Pressing any manual sync button triggers sync immediately and cancels any pending timer
-- After a successful manual or auto sync, `pendingChangeCount` is `0` and no timer is active
-- After a failed sync, `pendingChangeCount` is unchanged and no auto-retry fires
-- Mobile top bar sync icon shows spinner during sync, tick on success, cross on failure
-- Desktop navbar sync button behaves identically to the Profile page sync button
-- The undo delete path does not schedule a new sync
+- First sign-in with Drive permission unchecked shows the "Grant Access" screen instead of a generic error.
+- Tapping "Grant Access" re-opens the OAuth consent screen with `drive.appdata` scope.
+- Revoking Drive access during active use shows the persistent "Re-authorise" toast.
+- Tapping "Re-authorise" triggers consent screen, and on success retries the sync without losing pending changes.
+- Unrelated API errors (4xx other than 403, 5xx) do not trigger the 403-specific flow.
+
+---
+
+### Phase 19 — User-defined currencies
+
+**Scope:** `src/pages/Profile.jsx`, `src/db/index.js`, `src/db/currencies.js`, `src/db/seed.js`, `src/db/snapshot.js`
+
+**Work:**
+
+*Schema v3 migration (drop `symbol` field):*
+1. Bump `DB_VERSION` in `db/index.js` from `2` to `3`.
+2. Add an upgrade handler that iterates all currency records in the `currencies` store and deletes the `symbol` field from each.
+3. Update `db/snapshot.js`'s `version` from `2` to `3`.
+4. Update `db/seed.js` to stop writing the `symbol` field during currency seeding.
+
+*Custom currency form (per §7.5):*
+5. In `Profile.jsx`'s "Add Currency" flow, add a *"Define custom currency"* option at the bottom of the base currency search popup.
+6. Tapping it opens an inline form with:
+   - **Code:** text input, max 3 letters, validated against existing currency codes (case-insensitive). Show inline error if already exists.
+   - **Name:** text input, required.
+   - **Save** button: validates and writes via `currencyStore.addCurrency({ code, name })`.
+   - **Cancel** button: closes the form.
+7. Existing base-currency search-and-select flow continues to work unchanged.
+
+**Do not touch:** Any other page, any transaction/category logic, any sync logic (currencies already sync via existing `currencies.js` `notifyChange` call), any auth logic, the CategorySelect component.
+
+**Acceptance criteria:**
+- Schema v3 migration runs automatically on existing databases; `symbol` field is absent from all currency records after migration.
+- Base currency search and selection works as before.
+- "Define custom currency" option appears at the bottom of the currency search popup.
+- Custom currency with valid code and name is saved and appears in the active currencies list.
+- Duplicate code (case-insensitive) shows an inline error and does not save.
+- Custom currencies sync correctly to/from Drive.
+
+---
+
+### Phase 20 — Categories search
+
+Implement the inline search header specified in §7.4.
+
+**Scope:** `src/pages/Categories.jsx`
+
+**Work:**
+1. Add a text input to the header bar, left of the "New Category" button.
+2. Maintain a `searchQuery` state in `Categories.jsx`.
+3. Filter the rendered categories in real-time as the user types. Match against `name`, `description`, and account type label (case-insensitive substring).
+4. Account type groups with no matching visible categories are hidden entirely (section header not rendered).
+5. When the search query is cleared, restore the full grouped list.
+
+**Do not touch:** Any DB store, category CRUD logic, any other page, any layout component outside `Categories.jsx`, the Category Form modal.
+
+**Acceptance criteria:**
+- Text input is visible in the header bar next to "New Category".
+- Typing filters visible categories in real-time. Matching is case-insensitive and searches name, description, and type.
+- Empty groups are hidden (no orphaned section headers).
+- Clearing the search restores the full list instantly.
+
+---
+
+### Phase 21 — Analytics page
+
+Build the Analytics page per the full visual and data spec in §7.6.
+
+**Scope:** `src/pages/Analytics.jsx`, `package.json`
+
+**Work:**
+1. Install `recharts` as a project dependency.
+2. Implement the component in `src/pages/Analytics.jsx`.
+3. Add a global time range filter with options: This Month · Last 3 Months · Last 6 Months · All Time (default: Last 6 months).
+4. Build five charts in display order:
+   - **Spending by Category** — `<PieChart>` donut with `<Tooltip>` and `<Legend>`. Each slice = one category's total expense debits.
+   - **Monthly Expenses vs Income** — `<BarChart>` with two `<Bar>` series per month.
+   - **Net Worth over time** — `<LineChart>` with a horizontal reference line at zero.
+   - **Cash Flow over time** — `<LineChart>` with reference line at zero.
+   - **Balance per Account** — horizontal `<BarChart>` preceded by a multi-select for account selection (default: all root-level assets).
+5. Apply the multi-currency exclusion note below each chart: *"Amounts shown in [default currency code] only."*
+6. Use `useBalance` and `useMetrics` hooks where applicable; create page-specific data computation logic as needed.
+7. Style using the app's design tokens (colours from `tailwind.config.js`, `font-numeric` for axis tick values, `ResponsiveContainer` for responsiveness).
+
+**Do not touch:** Any other page, any DB schema, any sync/auth/export logic, the CategorySelect or Toast components, the transaction form.
+
+**Acceptance criteria:**
+- All five charts render with correct data based on the selected time range.
+- Changing time range updates all charts simultaneously.
+- Charts display amounts in the default currency only; other currencies are excluded.
+- The multi-currency exclusion note is visible below each chart.
+- The page does not crash when there are no transactions (empty state shown gracefully).
+- Recharts components use the app's design tokens for colours and fonts.
 
 ---
 
@@ -974,10 +1065,8 @@ Both the desktop navbar avatar (existing) and the mobile top bar sync icon (new)
 - Currency conversion + Forex Gain/Loss tracking
 - Statement ingestion (PDF/CSV parsing)
 - Email ingestion (Gmail API)
-- Analytics page (charts and stats)
 - Investment current-value tracking
 - Multi-user / shared access
-- User-defined currencies — allow adding currencies not present in `baseCurrencies.js`
 - Person-to-person splits and transfers with Accounts Payable/Receivable tracking
 - Multi-tab safety — handle account switching across tabs without data corruption
 

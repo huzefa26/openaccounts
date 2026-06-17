@@ -4,65 +4,65 @@
 
 @layer base {
   :root {
-    --bg: #FAFAF8;
+    /* Surfaces */
+    --bg:      #FAFAF8;
     --surface: #FFFFFF;
     --overlay: rgba(26, 26, 26, 0.4);
-    --border: #E8E8E4;
+
+    /* Borders */
+    --border:        #E8E8E4;
     --border-strong: #D0CFC9;
-    --text-primary: #1A1A1A;
-    --text-secondary: #6B6B65;
-    --text-tertiary: #9B9B94;
-    --text-disabled: #BEBEB8;
-    --text-on-accent: #FFFFFF;
-    --income: #1A7A4A;
-    --income-bg: #EDF7F2;
-    --expense: #C0392B;
-    --expense-bg: #FDF2F1;
-    --neutral: #2C5282;
-    --neutral-bg: #EBF2FF;
-    --accent: #1E3A5F;
+
+    /* Text */
+    --text-primary:    #1A1A1A;
+    --text-secondary:  #6B6B65;
+    --text-tertiary:   #9B9B94;
+    --text-disabled:   #BEBEB8;
+    --text-on-accent:  #FFFFFF;
+
+    /* Brand — swap these 3 to change theme */
+    --accent:       #1E3A5F;
     --accent-hover: #162C4A;
     --accent-light: #E8EEF5;
-    --link: #2563EB;
-    --error: #C0392B;
-    --error-bg: #FDF2F1;
-    --warning: #D97706;
-    --warning-bg: #FEF9EC;
-    --success: #1A7A4A;
-    --success-bg: #EDF7F2;
-    --font-ui: 'Plus Jakarta Sans', -apple-system, sans-serif;
+
+    /* Semantic feedback */
+    --success:    #1A7A4A;  --success-bg:  #EDF7F2;
+    --error:      #C0392B;  --error-bg:    #FDF2F1;
+    --warning:    #D97706;  --warning-bg:  #FEF9EC;
+    --info:       #0369A1;  --info-bg:     #F0F9FF;
+
+    /* Financial domain */
+    --income:     #1A7A4A;  --income-bg:   #EDF7F2;
+    --expense:    #C0392B;  --expense-bg:  #FDF2F1;
+
+    /* Typography */
+    --font-ui:      'Plus Jakarta Sans', -apple-system, sans-serif;
     --font-numeric: 'Geist Mono', 'Roboto Mono', monospace;
-    --radius-sm: 4px;
-    --radius-md: 6px;
-    --radius-lg: 8px;
+
+    /* Geometry */
+    --radius-sm:   4px;
+    --radius-md:   6px;
+    --radius-lg:   8px;
     --radius-full: 9999px;
-    --shadow-pop: 0 4px 16px -4px rgba(0, 0, 0, 0.12), 0 0 0 1px var(--border);
+
+    /* Elevation */
+    --shadow-pop: 0 4px 16px -4px rgba(0,0,0,0.12),
+                  0 0 0 1px var(--border);
+
+    /* Motion */
     --transition-base: 120ms ease;
   }
 }
 
 @layer base {
-  *,
-  *::before,
-  *::after {
-    border-color: var(--border);
-  }
-
-  html {
-    font-family: var(--font-ui);
-  }
-
-  body {
+  *, *::before, *::after { border-color: var(--border); }
+  html  { font-family: var(--font-ui); }
+  body  {
     margin: 0;
     background-color: var(--bg);
     color: var(--text-primary);
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
-
-  input,
-  textarea,
-  select {
-    font-family: var(--font-ui);
-  }
+  input, textarea, select { font-family: var(--font-ui); }
 }
