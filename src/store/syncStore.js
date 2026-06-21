@@ -69,6 +69,7 @@ const useSyncStore = create((set, get) => ({
       set({ status: 'error', error: err.message });
       if (isInsufficientScopeError(err)) {
         useToastStore.getState().addToast({
+          key: 'drive-access-lost',
           message: 'Drive access was lost. Your local data is safe — re-authorise to resume syncing.',
           type: 'error',
           action: {
@@ -85,6 +86,7 @@ const useSyncStore = create((set, get) => ({
         });
       } else {
         useToastStore.getState().addToast({
+          key: 'sync-failed',
           message: 'Sync failed. Try again.',
           type: 'error',
           duration: TOAST_DURATION_ERROR,

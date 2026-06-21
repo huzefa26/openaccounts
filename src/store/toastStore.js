@@ -8,6 +8,7 @@ const useToastStore = create((set, get) => ({
     const id = crypto.randomUUID();
     const entry = {
       id,
+      key: toast.key || null,
       message: toast.message,
       type: toast.type || 'info',
       duration: toast.type === 'error' ? undefined : (toast.duration || TOAST_DURATION_SUCCESS),
@@ -15,7 +16,11 @@ const useToastStore = create((set, get) => ({
     };
 
     set((state) => {
-      const updated = [...state.toasts, entry];
+      let toasts = state.toasts;
+      if (entry.key) {
+        toasts = toasts.filter((t) => t.key !== entry.key);
+      }
+      const updated = [...toasts, entry];
       return { toasts: updated.length > MAX_VISIBLE_TOASTS ? updated.slice(-MAX_VISIBLE_TOASTS) : updated };
     });
 
