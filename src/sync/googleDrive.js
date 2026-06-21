@@ -20,6 +20,25 @@ async function ensureToken() {
   return getAccessToken();
 }
 
+export function isInsufficientScopeError(err) {
+  return err?.code === 'INSUFFICIENT_SCOPE';
+}
+
+function annotateDriveError(res, body, prefix = 'Drive API error') {
+  let message;
+  try {
+    const json = JSON.parse(body);
+    message = json.error?.message || json.error_description || res.statusText;
+  } catch {
+    message = body || res.statusText;
+  }
+  const err = new Error(`${prefix} (${res.status}): ${message}`);
+  if (res.status === 403 && message?.toLowerCase().includes('insufficient authentication scopes')) {
+    err.code = 'INSUFFICIENT_SCOPE';
+  }
+  return err;
+}
+
 async function driveFetch(url, options = {}) {
   const token = await ensureToken();
   const res = await fetch(url, {
@@ -31,14 +50,7 @@ async function driveFetch(url, options = {}) {
   });
   if (!res.ok) {
     const body = await res.text();
-    let message;
-    try {
-      const json = JSON.parse(body);
-      message = json.error?.message || json.error_description || res.statusText;
-    } catch {
-      message = body || res.statusText;
-    }
-    throw new Error(`Drive API error (${res.status}): ${message}`);
+    throw annotateDriveError(res, body);
   }
   return res;
 }
@@ -75,7 +87,7 @@ export async function createFile(data) {
   });
   if (!res.ok) {
     const body = await res.text();
-    throw new Error(`Drive upload error (${res.status}): ${body}`);
+    throw annotateDriveError(res, body, 'Drive upload error');
   }
   return res.json();
 }
@@ -107,7 +119,7 @@ export async function updateFile(fileId, data) {
   });
   if (!res.ok) {
     const body = await res.text();
-    throw new Error(`Drive update error (${res.status}): ${body}`);
+    throw annotateDriveError(res, body, 'Drive update error');
   }
   return res.json();
 }
