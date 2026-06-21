@@ -2,7 +2,8 @@ import { useEffect, useState, useCallback } from 'react';
 import { initDB } from '../../db/index';
 import { seedFirstRun } from '../../db/seed';
 import { STORE_NAMES, buildSnapshot, populateFromSnapshot } from '../../db/snapshot';
-import { findFile, readFile, createFile } from '../../sync/googleDrive';
+import { findFile, readFile, createFile, isInsufficientScopeError } from '../../sync/googleDrive';
+import { reAuthorizeDrive } from '../../sync/googleAuth';
 import * as dbSettings from '../../db/settings';
 import { APP_INIT_TIMEOUT_MS, APP_INIT_COMPLETE_DELAY_MS } from '../../constants/app';
 
@@ -31,8 +32,14 @@ async function buildPushSnapshot(db) {
 export default function AppInit({ onComplete }) {
   const [status, setStatus] = useState(STEPS.checking);
   const [error, setError] = useState(null);
+  const [driveScopeDenied, setDriveScopeDenied] = useState(false);
+  const [granting, setGranting] = useState(false);
+  const [retryKey, setRetryKey] = useState(0);
 
   const run = useCallback(async () => {
+    setError(null);
+    setDriveScopeDenied(false);
+
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), APP_INIT_TIMEOUT_MS);
 
@@ -61,7 +68,9 @@ export default function AppInit({ onComplete }) {
       setTimeout(() => onComplete(), APP_INIT_COMPLETE_DELAY_MS);
     } catch (err) {
       clearTimeout(timeout);
-      if (err.name === 'AbortError') {
+      if (isInsufficientScopeError(err)) {
+        setDriveScopeDenied(true);
+      } else if (err.name === 'AbortError') {
         setError(STEPS.error);
       } else {
         setError(err.message);
@@ -71,7 +80,42 @@ export default function AppInit({ onComplete }) {
 
   useEffect(() => {
     run();
-  }, [run]);
+  }, [run, retryKey]);
+
+  async function handleGrantAccess() {
+    setGranting(true);
+    try {
+      await reAuthorizeDrive();
+      setDriveScopeDenied(false);
+      setRetryKey((k) => k + 1);
+    } catch {
+      // user denied consent or closed popup — stay on grant access screen
+    } finally {
+      setGranting(false);
+    }
+  }
+
+  if (driveScopeDenied) {
+    return (
+      <div className="min-h-screen bg-bg flex items-center justify-center p-6">
+        <div className="text-center max-w-sm">
+          <p className="text-sm text-text-primary mb-4">
+            OpenAccounts needs access to your Google Drive to save your data.
+            It can only access files it creates — nothing else in your Drive
+            is visible to this app.
+          </p>
+          <button
+            type="button"
+            onClick={handleGrantAccess}
+            disabled={granting}
+            className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium bg-accent text-text-on-accent rounded-md hover:bg-accent-hover transition-colors duration-base"
+          >
+            {granting ? 'Granting...' : 'Grant Access'}
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   if (error) {
     return (
