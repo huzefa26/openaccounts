@@ -2,6 +2,8 @@ import { create } from 'zustand';
 import * as dbSettings from '../db/settings';
 import { registerOnChange } from '../db/sync';
 import { sync as runSyncEngine } from '../sync/syncEngine';
+import { isInsufficientScopeError } from '../sync/googleDrive';
+import { reAuthorizeDrive } from '../sync/googleAuth';
 import useTransactionStore from './transactionStore';
 import useCategoryStore from './categoryStore';
 import useCurrencyStore from './currencyStore';
@@ -65,11 +67,29 @@ const useSyncStore = create((set, get) => ({
       });
     } catch (err) {
       set({ status: 'error', error: err.message });
-      useToastStore.getState().addToast({
-        message: 'Sync failed. Try again.',
-        type: 'error',
-        duration: TOAST_DURATION_ERROR,
-      });
+      if (isInsufficientScopeError(err)) {
+        useToastStore.getState().addToast({
+          message: 'Drive access was lost. Your local data is safe — re-authorise to resume syncing.',
+          type: 'error',
+          action: {
+            label: 'Re-authorise',
+            onClick: async () => {
+              try {
+                await reAuthorizeDrive();
+                get().syncNow();
+              } catch {
+                // re-authorization failed — user can tap again from the same toast
+              }
+            },
+          },
+        });
+      } else {
+        useToastStore.getState().addToast({
+          message: 'Sync failed. Try again.',
+          type: 'error',
+          duration: TOAST_DURATION_ERROR,
+        });
+      }
     }
   },
 
