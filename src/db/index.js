@@ -34,8 +34,10 @@ function createDB() {
 let dbPromise = createDB();
 
 export async function resetDB() {
-  const db = await dbPromise;
-  db.close();
+  if (dbPromise) {
+    const db = await dbPromise;
+    db.close();
+  }
   await new Promise((resolve, reject) => {
     const req = indexedDB.deleteDatabase(DB_NAME);
     req.onsuccess = () => resolve();
