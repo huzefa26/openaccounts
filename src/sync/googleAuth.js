@@ -174,3 +174,39 @@ export async function refreshToken() {
     client.requestAccessToken({ prompt: '' });
   });
 }
+
+export async function reAuthorizeDrive() {
+  const clientId = getClientId();
+  if (!clientId) throw new Error('Google Client ID not configured');
+
+  const oauth2 = await loadGIS();
+
+  return new Promise((resolve, reject) => {
+    const client = oauth2.initTokenClient({
+      client_id: clientId,
+      scope: SCOPES,
+      callback: (response) => {
+        if (response.error) {
+          if (response.error === 'access_denied') {
+            reject(new Error('ACCESS_DENIED'));
+          } else {
+            reject(new Error(response.error_description || response.error));
+          }
+          return;
+        }
+        const expiry = Date.now() + response.expires_in * 1000;
+        localStorage.setItem(STORAGE_KEYS.ACCESS_TOKEN, response.access_token);
+        localStorage.setItem(STORAGE_KEYS.TOKEN_EXPIRY, String(expiry));
+        resolve({ accessToken: response.access_token, tokenExpiry: expiry });
+      },
+      error_callback: (err) => {
+        if (err.type === 'popup_closed') {
+          reject(new Error('ACCESS_DENIED'));
+        } else {
+          reject(new Error(err.type || 'Re-authorization failed'));
+        }
+      },
+    });
+    client.requestAccessToken({ prompt: 'consent' });
+  });
+}
