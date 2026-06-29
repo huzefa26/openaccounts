@@ -64,6 +64,16 @@ export default function AppInit({ onComplete }) {
       clearTimeout(timeout);
       await dbSettings.set('last_synced_at', new Date().toISOString());
       await dbSettings.set('app_version', '2');
+
+      const { default: useTransactionStore } = await import('../../store/transactionStore');
+      const { default: useCategoryStore } = await import('../../store/categoryStore');
+      const { default: useCurrencyStore } = await import('../../store/currencyStore');
+      await Promise.all([
+        useTransactionStore.getState().fetchAll(),
+        useCategoryStore.getState().fetchAll(),
+        useCurrencyStore.getState().fetchAll(),
+      ]);
+
       setStatus(STEPS.done);
       setTimeout(() => onComplete(), APP_INIT_COMPLETE_DELAY_MS);
     } catch (err) {
